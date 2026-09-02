@@ -13,12 +13,12 @@ export interface TimerView {
   secondsLeft: number;    // ceil(remaining) untuk fase animasi
 }
 
+// identitas stabil agar useSyncExternalStore tidak resubscribe tiap render
+const subscribe = (fn: (s: TimerState) => void) => timerStore.subscribe(fn);
+const getSnapshot = () => timerStore.getState();
+
 export function useTimer(): TimerView {
-  const state = useSyncExternalStore(
-    (onStoreChange) => timerStore.subscribe(onStoreChange),
-    () => timerStore.getState(),
-    () => timerStore.getState(), // server snapshot
-  );
+  const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   const [now, setNow] = useState(() => Date.now());
 

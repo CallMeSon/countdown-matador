@@ -16,12 +16,31 @@ describe('useTimer', () => {
   });
 
   it('remaining turun seiring waktu saat running', async () => {
-    const { result } = renderHook(() => useTimer());
-    act(() => { result.current.state; }); // baca awal
-    // start via store langsung
-    const store = await import('@/lib/timer-store');
-    act(() => { store.timerStore.start(); });
+    const { useTimer: useTimerFresh } = await import('@/hooks/useTimer');
+    const { timerStore } = await import('@/lib/timer-store');
+    const { result } = renderHook(() => useTimerFresh());
+    act(() => { timerStore.start(); });
     expect(result.current.state.status).toBe('running');
+    const before = result.current.remaining;
+    // geser startedAt mundur 30s → remaining turun ~30s pada tick rAF berikutnya
+    act(() => { timerStore.getState().startedAt = Date.now() - 30_000; });
+    await act(async () => { await new Promise((r) => setTimeout(r, 100)); });
+    expect(result.current.remaining).toBeLessThan(before - 25);
+  });
+
+  it('resume dari paused overtime: remaining tetap negatif dan terus turun', async () => {
+    const { useTimer: useTimerFresh } = await import('@/hooks/useTimer');
+    const { timerStore } = await import('@/lib/timer-store');
+    const { result } = renderHook(() => useTimerFresh());
+    act(() => { timerStore.setDuration(10); timerStore.start(); });
+    act(() => { timerStore.getState().startedAt = Date.now() - 30_000; }); // remaining ≈ -20
+    act(() => { timerStore.pause(); });
+    act(() => { timerStore.start(); }); // resume: lanjut overtime
+    expect(result.current.state.status).toBe('running');
+    expect(result.current.remaining).toBeLessThan(-19);
+    const before = result.current.remaining;
+    await act(async () => { await new Promise((r) => setTimeout(r, 100)); });
+    expect(result.current.remaining).toBeLessThan(before);
   });
 
   it('formatTime: negatif jadi -MM:SS dan >60min jadi H:MM:SS', async () => {

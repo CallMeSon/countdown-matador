@@ -31,17 +31,47 @@ describe('timerStore', () => {
     expect(s.startedAt).toBeGreaterThan(0);
   });
 
-  it('pause menyimpan pausedRemaining dan resume dari situ', () => {
+  it('pause menyimpan pausedRemaining', () => {
     store.timerStore.setDuration(100);
     store.timerStore.start();
-    const now = Date.now();
     store.timerStore.pause(); // paused ~0s setelah start
     const s = store.timerStore.getState();
     expect(s.status).toBe('paused');
     expect(s.pausedRemaining).not.toBeNull();
     // remaining saat pause ≈ duration
     expect(Math.abs((s.pausedRemaining ?? 0) - 100)).toBeLessThan(5);
-    void now;
+  });
+
+  it('resume dari paused: startedAt digeser agar remaining lanjut dari pausedRemaining', () => {
+    store.timerStore.setDuration(100);
+    store.timerStore.start();
+    store.timerStore.getState().startedAt = Date.now() - 40_000; // remaining ≈ 60
+    store.timerStore.pause();
+    expect(Math.abs((store.timerStore.getState().pausedRemaining ?? 0) - 60)).toBeLessThan(2);
+    store.timerStore.start();
+    const s = store.timerStore.getState();
+    expect(s.status).toBe('running');
+    const rem1 = store.timerStore.computeRemaining(s, Date.now());
+    expect(Math.abs(rem1 - 60)).toBeLessThan(2);
+    // terus turun pada now berikutnya
+    const rem2 = store.timerStore.computeRemaining(s, Date.now() + 500);
+    expect(rem2).toBeLessThan(rem1);
+    expect(rem2).toBeGreaterThan(rem1 - 2);
+  });
+
+  it('resume dari paused overtime: tetap negatif dan terus turun', () => {
+    store.timerStore.setDuration(10);
+    store.timerStore.start();
+    store.timerStore.getState().startedAt = Date.now() - 30_000; // remaining ≈ -20
+    store.timerStore.pause();
+    expect((store.timerStore.getState().pausedRemaining ?? 0)).toBeLessThan(-19);
+    store.timerStore.start();
+    const s = store.timerStore.getState();
+    expect(s.status).toBe('running');
+    const rem1 = store.timerStore.computeRemaining(s, Date.now());
+    expect(rem1).toBeLessThan(-19);
+    const rem2 = store.timerStore.computeRemaining(s, Date.now() + 500);
+    expect(rem2).toBeLessThan(rem1);
   });
 
   it('pause saat overtime menyimpan nilai negatif', () => {
