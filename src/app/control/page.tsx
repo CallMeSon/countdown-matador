@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTimer } from '@/hooks/useTimer';
+import { useCountdownBeep } from '@/hooks/useCountdownBeep';
 import { timerStore } from '@/lib/timer-store';
 import { PRESET_DURATIONS } from '@/types/timer';
 
@@ -22,9 +23,16 @@ const pad2 = (raw: string): string => raw.padStart(2, '0');
 
 export default function ControlPage() {
   const router = useRouter();
-  const { state, displayTime, isOvertime } = useTimer();
+  const { state, displayTime, isOvertime, secondsLeft } = useTimer();
   const [minutes, setMinutes] = useState('00');
   const [seconds, setSeconds] = useState('00');
+  const [soundOn, setSoundOn] = useState(true);
+  const { beepRef, beepBlocked, unlockBeep } = useCountdownBeep(
+    secondsLeft,
+    isOvertime,
+    state,
+    soundOn,
+  );
 
   const statusLabel: Record<string, string> = {
     idle: 'SIAP',
@@ -44,6 +52,7 @@ export default function ControlPage() {
   return (
     <main className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-6">
       <div className="w-full max-w-2xl space-y-8">
+        <audio ref={beepRef} src="/beeps.mp3" data-testid="beep-audio" preload="auto" />
         <header className="text-center">
           <h1 className="text-2xl font-bold tracking-widest">CONTROL</h1>
           <p data-testid="status-label" className={`text-sm font-semibold tracking-widest ${statusColor[state.status]}`}>
@@ -161,7 +170,25 @@ export default function ControlPage() {
           >
             MATADOR
           </button>
+          <button
+            onClick={() => setSoundOn((v) => !v)}
+            className={`rounded-xl border px-6 py-4 text-xl font-bold tracking-widest transition-colors ${
+              soundOn
+                ? 'border-emerald-600 bg-emerald-600/10 text-emerald-400'
+                : 'border-zinc-700 bg-zinc-900 text-zinc-500'
+            }`}
+          >
+            {soundOn ? '🔊' : '🔇'}
+          </button>
         </section>
+        {beepBlocked && (
+          <button
+            onClick={unlockBeep}
+            className="fixed bottom-6 right-6 z-50 rounded-xl bg-red-600 px-5 py-3 font-bold tracking-widest text-white shadow-lg"
+          >
+            🔊 KLIK UNTUK SUARA
+          </button>
+        )}
       </div>
     </main>
   );

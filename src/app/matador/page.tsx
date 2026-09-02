@@ -28,15 +28,15 @@ export default function MatadorPage() {
         </span>
         {mounted && isOvertime ? (
           <span className="flex items-baseline gap-4">
-            <span data-testid="matador-timesup" className="anim-glow font-anton text-2xl text-red-500 md:text-4xl">
+            <span data-testid="matador-timesup" className="anim-glow font-anton font-bold text-2xl text-red-500 md:text-4xl">
               TIME&apos;S UP
             </span>
-            <span data-testid="matador-overtime" className={`timer-digits font-anton text-2xl md:text-4xl ${timerColor}`}>
+            <span data-testid="matador-overtime" className={`timer-digits font-anton font-bold text-2xl md:text-4xl ${timerColor}`}>
               {overtimeTime}
             </span>
           </span>
         ) : (
-          <span data-testid="matador-timer" className={`timer-digits font-anton text-3xl md:text-5xl ${timerColor}`}>
+          <span data-testid="matador-timer" className={`timer-digits font-anton font-bold text-3xl md:text-5xl ${timerColor}`}>
             {displayTime}
           </span>
         )}
