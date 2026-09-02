@@ -1,0 +1,202 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Matador Timer — Global Styles
+   ============================================================ */
+
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* Reset & Base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  width: 100%;
+  height: 100%;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* No overflow:hidden here — pages control their own scroll */
+}
+
+body {
+  width: 100%;
+  min-height: 100%;
+  /* overflow:auto by default so /admin and /setting can scroll on mobile */
+  /* Display page (/?room=) sets its own overflow:hidden via inline styles */
+}
+
+/* Timer digit styling */
+.timer-digits {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  line-height: 0.88;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Container query support */
+.timer-container {
+  container-type: inline-size;
+  container-name: timer;
+  width: 100%;
+  height: 100%;
+}
+
+/* Responsive timer scaling with container queries */
+@container timer (min-width: 0px) {
+  .timer-text-auto {
+    font-size: clamp(3rem, 22cqw, 40rem);
+  }
+  .timer-label-auto {
+    font-size: clamp(0.75rem, 2.5cqw, 3rem);
+  }
+  .timer-badge-auto {
+    font-size: clamp(0.5rem, 1.8cqw, 2rem);
+  }
+}
+
+/* Overtime pulse animation */
+.animate-overtime-pulse {
+  animation: overtimePulse 1s ease-in-out infinite;
+}
+
+@keyframes overtimePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Warning flash animation */
+.animate-warning-flash {
+  animation: warningFlash 0.5s ease-in-out infinite;
+}
+
+@keyframes warningFlash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Cue flash overlay */
+.animate-cue-flash {
+  animation: cueFlash 2.5s ease-in-out forwards;
+}
+
+@keyframes cueFlash {
+  0% { opacity: 0; }
+  8% { opacity: 0.85; }
+  75% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+/* Ticker scroll */
+.animate-ticker-scroll {
+  animation: tickerScroll 15s linear infinite;
+}
+
+@keyframes tickerScroll {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* Tally blink */
+.animate-tally-blink {
+  animation: tallyBlink 1.5s ease-in-out infinite;
+}
+
+@keyframes tallyBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Hide scrollbar but allow scrolling (for tab bars) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom number input styling */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Color input styling */
+input[type="color"] {
+  -webkit-appearance: none;
+  border: none;
+  cursor: pointer;
+}
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+input[type="color"]::-webkit-color-swatch {
+  border: 2px solid #333;
+  border-radius: 4px;
+}
+
+/* Admin panel scrollbar (desktop only — used inside overflow-y-auto containers) */
+.admin-scroll {
+  overflow-x: hidden;
+  /* No fixed height — parent flex/grid controls sizing */
+}
+
+.admin-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.admin-scroll::-webkit-scrollbar-track {
+  background: #111;
+}
+.admin-scroll::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+.admin-scroll::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Focus styles for accessibility */
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid #06b6d4;
+  outline-offset: 2px;
+}
+
+/* Transition utility */
+.transition-colors-fast {
+  transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Fade in animation */
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Shake animation for error feedback */
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
