@@ -2,14 +2,6 @@
   command = "npm run build"
   publish = "out"
 
-# /timer/<token> isn't a build-time route (tokens are created at runtime via
-# /admin) — serve the static /timer page for any token and let it resolve
-# the token client-side. Must come before the catch-all below.
-[[redirects]]
-  from = "/timer/*"
-  to = "/timer/index.html"
-  status = 200
-
 [[redirects]]
   from = "/*"
   to = "/index.html"
