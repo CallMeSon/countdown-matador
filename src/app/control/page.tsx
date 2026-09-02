@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTimer } from '@/hooks/useTimer';
 import { timerStore } from '@/lib/timer-store';
 import { PRESET_DURATIONS } from '@/types/timer';
@@ -20,6 +21,7 @@ const sanitize = (raw: string, max: number): string =>
 const pad2 = (raw: string): string => raw.padStart(2, '0');
 
 export default function ControlPage() {
+  const router = useRouter();
   const { state, displayTime, isOvertime } = useTimer();
   const [minutes, setMinutes] = useState('00');
   const [seconds, setSeconds] = useState('00');
@@ -143,6 +145,21 @@ export default function ControlPage() {
             className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-6 py-4 text-xl font-bold tracking-widest hover:bg-zinc-800"
           >
             RESET
+          </button>
+        </section>
+        {/* Navigasi halaman */}
+        <section className="flex gap-3">
+          <button
+            onClick={() => router.push('/timer')}
+            className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-6 py-4 text-xl font-bold tracking-widest hover:bg-zinc-800"
+          >
+            TIMER
+          </button>
+          <button
+            onClick={() => router.push('/matador')}
+            className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-6 py-4 text-xl font-bold tracking-widest hover:bg-zinc-800"
+          >
+            MATADOR
           </button>
         </section>
       </div>

@@ -1,9 +1,16 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useTimer } from '@/hooks/useTimer';
 
 export default function MatadorPage() {
   const { displayTime, overtimeTime, secondsLeft, isOvertime } = useTimer();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const critical = !isOvertime && secondsLeft <= 10 && secondsLeft > 0;
   const timerColor =
     isOvertime || (critical && secondsLeft <= 5)
@@ -19,7 +26,7 @@ export default function MatadorPage() {
         <span data-testid="matador-label" className="text-sm font-semibold tracking-[0.3em] text-zinc-300">
           COUNTDOWN
         </span>
-        {isOvertime ? (
+        {mounted && isOvertime ? (
           <span className="flex items-baseline gap-4">
             <span data-testid="matador-timesup" className="anim-glow font-anton text-2xl text-red-500 md:text-4xl">
               TIME&apos;S UP
@@ -40,3 +47,4 @@ export default function MatadorPage() {
     </main>
   );
 }
+

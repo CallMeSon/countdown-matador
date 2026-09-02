@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { timerStore } from '@/lib/timer-store';
-import { formatTime, TimerState } from '@/types/timer';
+import { DEFAULT_TIMER_STATE, formatTime, TimerState } from '@/types/timer';
 
 export interface TimerView {
   state: TimerState;
@@ -16,9 +16,12 @@ export interface TimerView {
 // identitas stabil agar useSyncExternalStore tidak resubscribe tiap render
 const subscribe = (fn: (s: TimerState) => void) => timerStore.subscribe(fn);
 const getSnapshot = () => timerStore.getState();
+// server snapshot deterministik: SSR & hydration awal selalu render state default,
+// mencegah mismatch HTML server vs client saat store live (tab lain via BroadcastChannel)
+const getServerSnapshot = () => DEFAULT_TIMER_STATE;
 
 export function useTimer(): TimerView {
-  const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const [now, setNow] = useState(() => Date.now());
 
