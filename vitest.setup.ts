@@ -13,51 +13,6 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-// Mock Supabase Client & Realtime for Tests
-vi.mock('@/lib/supabase', () => {
-  const createMockChannel = () => {
-    const ch: any = {
-      on: vi.fn(() => ch),
-      subscribe: vi.fn((cb) => {
-        if (cb) cb('SUBSCRIBED');
-        return ch;
-      }),
-      track: vi.fn().mockResolvedValue('ok'),
-      untrack: vi.fn().mockResolvedValue('ok'),
-      presenceState: vi.fn().mockReturnValue({}),
-      send: vi.fn().mockResolvedValue({ error: null }),
-    };
-    return ch;
-  };
-
-  const createQueryBuilder = () => {
-    const qb: any = {
-      select: vi.fn(() => qb),
-      order: vi.fn(() => Promise.resolve({ data: [], error: null })),
-      eq: vi.fn(() => qb),
-      single: vi.fn(() => Promise.resolve({ data: null, error: null })),
-      upsert: vi.fn(() => Promise.resolve({ data: null, error: null })),
-      update: vi.fn(() => qb),
-      delete: vi.fn(() => qb),
-      then: (resolve: any, reject: any) => Promise.resolve({ data: null, error: null }).then(resolve, reject),
-      catch: (reject: any) => Promise.resolve({ data: null, error: null }).catch(reject),
-    };
-    return qb;
-  };
-
-  const mockSupabase = {
-    channel: vi.fn(() => createMockChannel()),
-    removeChannel: vi.fn(),
-    from: vi.fn(() => createQueryBuilder()),
-  };
-
-  return {
-    getSupabase: () => mockSupabase,
-    SUPABASE_URL: 'https://test.supabase.co',
-    SUPABASE_ANON_KEY: 'test-anon-key',
-  };
-});
-
 // Mock BroadcastChannel
 class MockBroadcastChannel {
   name: string;

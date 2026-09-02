@@ -1,248 +1,169 @@
 'use client';
 
 import { useState } from 'react';
-import { AppProvider, useApp } from '@/context/TimerContext';
-import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
-import { useAudioEngine } from '@/hooks/useAudioEngine';
-import { useAudioTriggers } from '@/hooks/useAudioTriggers';
+import { useRouter } from 'next/navigation';
+import { useTimer } from '@/hooks/useTimer';
+import { timerStore } from '@/lib/timer-store';
+import { PRESET_DURATIONS } from '@/types/timer';
 
-// Admin Components
-import SyncStatusBar from '@/components/admin/SyncStatusBar';
-import ModeSelector from '@/components/admin/ModeSelector';
-import DurationInput from '@/components/admin/DurationInput';
-import PresetButtons from '@/components/admin/PresetButtons';
-import MainControls from '@/components/admin/MainControls';
-import SessionInput from '@/components/admin/SessionInput';
-import SessionStatus from '@/components/admin/SessionStatus';
-import PositionControl from '@/components/admin/PositionControl';
-import AppearanceSettings from '@/components/admin/AppearanceSettings';
-import WarningThresholds from '@/components/admin/WarningThresholds';
-import BackgroundSettings from '@/components/admin/BackgroundSettings';
-import LogoSettings from '@/components/admin/LogoSettings';
-import OverlaySettings from '@/components/admin/OverlaySettings';
-import AudioManager from '@/components/admin/AudioManager';
-import CuePanel from '@/components/admin/CuePanel';
-import OperatorNotes from '@/components/admin/OperatorNotes';
-import EventLog from '@/components/admin/EventLog';
-import MiniPreview from '@/components/admin/MiniPreview';
-import AdminPinLock from '@/components/admin/AdminPinLock';
+const PRESET_LABELS: Record<number, string> = {
+  60: '1 MENIT',
+  180: '3 MENIT',
+  300: '5 MENIT',
+  600: '10 MENIT',
+  900: '15 MENIT',
+  1800: '30 MENIT',
+};
 
-// ============================================================
-// Tab Configuration
-//
-// Session CRUD (create/rename/delete rooms, master credentials) lives in
-// /admin only — this console is live show control, gated by the session's
-// own PIN, nothing more.
-// ============================================================
+const sanitize = (raw: string, max: number): string =>
+  raw.replace(/\D/g, '').slice(0, max);
 
-const TABS = [
-  { id: 'timer', label: 'Timer' },
-  { id: 'display', label: 'Tampilan' },
-  { id: 'audio', label: 'Audio' },
-  { id: 'cue', label: 'Cue Signal' },
-  { id: 'notes', label: 'Log & Catatan' },
-] as const;
+const pad2 = (raw: string): string => raw.padStart(2, '0');
 
-type TabId = typeof TABS[number]['id'];
+export default function ControlPage() {
+  const router = useRouter();
+  const { state, displayTime, isOvertime } = useTimer();
+  const [minutes, setMinutes] = useState('00');
+  const [seconds, setSeconds] = useState('00');
 
-// ============================================================
-// Operator Content — Mobile-First Scrollable Layout
-// ============================================================
+  const statusLabel: Record<string, string> = {
+    idle: 'SIAP',
+    running: 'JALAN',
+    paused: 'PAUSE',
+    overtime: 'OVERTIME',
+  };
+  const statusColor: Record<string, string> = {
+    idle: 'text-zinc-400',
+    running: 'text-emerald-400',
+    paused: 'text-amber-400',
+    overtime: 'text-red-500',
+  };
 
-function OperatorContent() {
-  const { state } = useApp();
-  const [activeTab, setActiveTab] = useState<TabId>('timer');
-
-  useKeyboardShortcuts(false);
-
-  // Lets the operator hear their own cues on this machine too, not just
-  // whatever's plugged into the stage display.
-  const audioEngine = useAudioEngine(state.audio);
-  useAudioTriggers(audioEngine);
-
-  if (!state.room.isUnlocked) {
-    return <AdminPinLock />;
-  }
+  const isRun = state.status === 'running' || state.status === 'overtime';
 
   return (
-    <div className="w-full min-h-screen bg-matador-panel text-white font-inter flex flex-col">
-      {/* ========== TOP HEADER (sticky on all screens) ========== */}
-      <div className="sticky top-0 z-20">
-        <SyncStatusBar />
-      </div>
+    <main className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-6">
+      <div className="w-full max-w-2xl space-y-8">
+        <header className="text-center">
+          <h1 className="text-2xl font-bold tracking-widest">CONTROL</h1>
+          <p data-testid="status-label" className={`text-sm font-semibold tracking-widest ${statusColor[state.status]}`}>
+            {statusLabel[state.status]}
+          </p>
+        </header>
 
-      {/* ========== TAB NAVIGATION (sticky below header) ========== */}
-      <div className="sticky top-[49px] z-10 border-b border-matador-border bg-matador-dark/95 backdrop-blur-sm shrink-0">
-        <div className="flex overflow-x-auto scrollbar-hide px-3 md:px-4">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 md:px-5 py-3 text-[11px] md:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap relative ${
-                activeTab === tab.id
-                  ? 'text-cyan-400 border-b-2 border-cyan-400 bg-matador-card/40'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ========== MAIN CONTENT AREA ========== */}
-      {/* On desktop (lg+): side-by-side columns. On mobile: single scrollable column. */}
-      <div className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden">
-
-        {/* LEFT: Tab Content (scrolls naturally on mobile, overflow-y-auto on desktop) */}
-        <div className="flex-1 lg:overflow-y-auto admin-scroll">
-          <div className="p-4 md:p-6 space-y-6">
-            {activeTab === 'timer' && <TimerTab />}
-            {activeTab === 'display' && <DisplayTab />}
-            {activeTab === 'audio' && <AudioTab />}
-            {activeTab === 'cue' && <CueTab />}
-            {activeTab === 'notes' && <NotesTab />}
+        {/* Preview timer */}
+        <div className="rounded-2xl border border-zinc-800 bg-black p-10 text-center">
+          <div
+            data-testid="preview-time"
+            className={`timer-digits font-anton text-8xl md:text-9xl ${
+              isOvertime ? 'text-red-500' : 'text-white'
+            }`}
+          >
+            {displayTime}
           </div>
         </div>
 
-        {/* RIGHT: Live Preview & Controls */}
-        <div className="w-full lg:w-[420px] xl:w-[460px] bg-matador-dark/80 p-4 flex flex-col gap-4 lg:overflow-y-auto admin-scroll shrink-0 border-t lg:border-t-0 lg:border-l border-matador-border">
-          <MiniPreview />
-          <SessionStatus />
-          <MainControls />
-        </div>
+        {/* Preset */}
+        <section>
+          <h2 className="mb-3 text-xs font-semibold tracking-widest text-zinc-400">DURASI</h2>
+          <div className="grid grid-cols-3 gap-3">
+            {PRESET_DURATIONS.map((d) => (
+              <button
+                key={d}
+                onClick={() => timerStore.setDuration(d)}
+                className={`rounded-xl border px-4 py-3 font-semibold tracking-wider transition-colors ${
+                  state.duration === d
+                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
+                    : 'border-zinc-800 bg-zinc-900 hover:border-zinc-600'
+                }`}
+              >
+                {PRESET_LABELS[d]}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Custom duration */}
+        <section className="flex items-end gap-3">
+          <div className="flex-1">
+            <span className="mb-1 block text-xs font-semibold tracking-widest text-zinc-400">
+              DURASI CUSTOM (MM:SS)
+            </span>
+            <div className="flex items-center gap-2">
+              <input
+                data-testid="duration-minutes"
+                aria-label="MENIT"
+                value={minutes}
+                onChange={(e) => setMinutes(sanitize(e.target.value, 3))}
+                onBlur={() => setMinutes(pad2(minutes))}
+                inputMode="numeric"
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-center text-lg tracking-widest focus:border-emerald-500 focus:outline-none"
+              />
+              <span className="pb-1 text-lg font-semibold tracking-widest text-zinc-400">:</span>
+              <input
+                data-testid="duration-seconds"
+                aria-label="DETIK"
+                value={seconds}
+                onChange={(e) => setSeconds(sanitize(e.target.value, 2))}
+                onBlur={() => setSeconds(pad2(seconds))}
+                inputMode="numeric"
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-center text-lg tracking-widest focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              const total = Number(minutes) * 60 + Number(seconds);
+              if (total > 0) timerStore.setDuration(total);
+            }}
+            className="rounded-xl border border-zinc-700 bg-zinc-800 px-6 py-3 font-semibold tracking-widest hover:bg-zinc-700"
+          >
+            SET
+          </button>
+        </section>
+
+        {/* Kontrol utama */}
+        <section className="flex gap-3">
+          {isRun ? (
+            <button
+              onClick={() => timerStore.pause()}
+              className="flex-1 rounded-xl bg-amber-500 px-6 py-4 text-xl font-bold tracking-widest text-black hover:bg-amber-400"
+            >
+              PAUSE
+            </button>
+          ) : (
+            <button
+              onClick={() => timerStore.start()}
+              disabled={state.status === 'idle' && state.duration <= 0}
+              className="flex-1 rounded-xl bg-emerald-500 px-6 py-4 text-xl font-bold tracking-widest text-black hover:bg-emerald-400"
+            >
+              START
+            </button>
+          )}
+          <button
+            onClick={() => timerStore.reset()}
+            className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-6 py-4 text-xl font-bold tracking-widest hover:bg-zinc-800"
+          >
+            RESET
+          </button>
+        </section>
+        {/* Navigasi halaman */}
+        <section className="flex gap-3">
+          <button
+            onClick={() => router.push('/timer')}
+            className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-6 py-4 text-xl font-bold tracking-widest hover:bg-zinc-800"
+          >
+            TIMER
+          </button>
+          <button
+            onClick={() => router.push('/matador')}
+            className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-6 py-4 text-xl font-bold tracking-widest hover:bg-zinc-800"
+          >
+            MATADOR
+          </button>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
 
-// ============================================================
-// Tab: Timer Control
-// ============================================================
-
-function TimerTab() {
-  return (
-    <div className="space-y-6 max-w-3xl">
-      <Section title="Mode Timer">
-        <ModeSelector />
-      </Section>
-
-      <Section title="Preset Durasi Cepat">
-        <PresetButtons />
-      </Section>
-
-      <Section title="Durasi Kustom / Target Waktu">
-        <DurationInput />
-      </Section>
-
-      <Section title="Label Sesi Acara">
-        <SessionInput />
-      </Section>
-    </div>
-  );
-}
-
-// ============================================================
-// Tab: Display Settings
-// ============================================================
-
-function DisplayTab() {
-  return (
-    <div className="space-y-6 max-w-3xl">
-      <Section title="Posisi Timer di Layar">
-        <PositionControl />
-      </Section>
-
-      <Section title="Font, Format & Warna">
-        <AppearanceSettings />
-      </Section>
-
-      <Section title="Peringatan Waktu Bertingkat (Warning Thresholds)">
-        <WarningThresholds />
-      </Section>
-
-      <Section title="Background Layar Display">
-        <BackgroundSettings />
-      </Section>
-
-      <Section title="Logo Event / Sponsor">
-        <LogoSettings />
-      </Section>
-
-      <Section title="Overlay (Progress Bar, Ticker, Tally Light)">
-        <OverlaySettings />
-      </Section>
-    </div>
-  );
-}
-
-// ============================================================
-// Tab: Audio Settings
-// ============================================================
-
-function AudioTab() {
-  return (
-    <div className="space-y-6 max-w-3xl">
-      <Section title="Efek Suara & Peringatan Audio">
-        <AudioManager />
-      </Section>
-    </div>
-  );
-}
-
-// ============================================================
-// Tab: Cue Signal
-// ============================================================
-
-function CueTab() {
-  return (
-    <div className="space-y-6 max-w-3xl">
-      <Section title="Kirim Sinyal Isyarat ke Pembicara (Cue Signal)">
-        <CuePanel />
-      </Section>
-    </div>
-  );
-}
-
-// ============================================================
-// Tab: Operator Notes & Log
-// ============================================================
-
-function NotesTab() {
-  return (
-    <div className="space-y-6 max-w-3xl">
-      <Section title="Catatan & Rundown Acara Operator">
-        <OperatorNotes />
-      </Section>
-
-      <Section title="Event Log (Riwayat Aksi Real-Time)">
-        <EventLog />
-      </Section>
-    </div>
-  );
-}
-
-// ============================================================
-// Shared Section Wrapper Component
-// ============================================================
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-matador-card border border-matador-border rounded-xl p-4 md:p-5 space-y-3 shadow-sm">
-      <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300">{title}</h3>
-      {children}
-    </div>
-  );
-}
-
-// ============================================================
-// Default Export Wrapper
-// ============================================================
-
-export default function ControlPage() {
-  return (
-    <AppProvider isAdmin={true}>
-      <OperatorContent />
-    </AppProvider>
-  );
-}

@@ -1,63 +1,69 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { AppProvider } from '@/context/TimerContext';
-import { DisplayContent } from '@/components/display/DisplayView';
-import { EventSession, getSessionByToken, fetchRemoteSessions } from '@/lib/session-registry';
-
-// ============================================================
-// Stage Display — /timer/<token>
-//
-// This is a static export, so the token can't be a real Next.js dynamic
-// route (it's created at runtime via /admin, long after build). Instead
-// netlify.toml rewrites /timer/* to this one static page, and the token is
-// read from the URL client-side and resolved against the session registry.
-// ============================================================
-
-function readTokenFromPath(): string {
-  if (typeof window === 'undefined') return '';
-  const segments = window.location.pathname.split('/').filter(Boolean); // ['timer', '<token>']
-  return segments[1] || '';
-}
+import { useEffect, useRef, useState } from 'react';
+import { useTimer } from '@/hooks/useTimer';
 
 export default function TimerPage() {
-  const [session, setSession] = useState<EventSession | null | 'loading'>('loading');
+  const { displayTime, overtimeTime, secondsLeft, isOvertime, state } = useTimer();
+  const prevSec = useRef(secondsLeft);
+  const [animKey, setAnimKey] = useState(0);
+  const [mounted, setMounted] = useState(false);
+  const beepRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    const token = readTokenFromPath();
-    if (!token) {
-      setSession(null);
-      return;
-    }
-
-    const tryResolve = () => setSession(getSessionByToken(token) ?? null);
-
-    tryResolve();
-    // Registry may still be a stale local cache on a cold device — refresh
-    // from Supabase and re-check once it lands.
-    fetchRemoteSessions().then(tryResolve);
-    window.addEventListener('matador_sessions_updated', tryResolve);
-    return () => window.removeEventListener('matador_sessions_updated', tryResolve);
+    setMounted(true);
   }, []);
 
-  if (session === 'loading') {
-    return <div className="w-screen h-screen bg-black" />;
-  }
+  // Trigger animasi tiap perubahan detik
+  useEffect(() => {
+    if (prevSec.current !== secondsLeft) {
+      prevSec.current = secondsLeft;
+      setAnimKey((k) => k + 1);
+    }
+  }, [secondsLeft]);
 
-  if (!session) {
-    return (
-      <div className="w-screen h-screen bg-black text-white font-inter flex items-center justify-center p-4">
-        <div className="text-center space-y-2">
-          <p className="text-sm text-zinc-400 uppercase tracking-wider">Sesi Tidak Ditemukan</p>
-          <p className="text-xs text-zinc-600">Link ini tidak valid atau sesinya sudah dihapus.</p>
-        </div>
-      </div>
-    );
-  }
+  // Beep 10 detik terakhir — bunyi sekali tiap detik fase kritis
+  useEffect(() => {
+    const running = state.status === 'running';
+    if (!mounted || !running || isOvertime || secondsLeft > 10 || secondsLeft < 1) return;
+    const audio = beepRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }, [mounted, secondsLeft, isOvertime, state.status]);
+
+  const critical = !isOvertime && secondsLeft <= 10 && secondsLeft > 0;
+  const mainClass = critical
+    ? `anim-pop ${secondsLeft <= 5 ? 'text-red-500' : 'text-amber-400'}`
+    : 'anim-tick text-white';
 
   return (
-    <AppProvider isAdmin={false} initialRoomId={session.id}>
-      <DisplayContent />
-    </AppProvider>
+    <main className="flex h-screen w-screen items-center justify-center overflow-hidden bg-black">
+      <audio ref={beepRef} src="/beeps.mp3" data-testid="beep-audio" preload="auto" />
+      {mounted && isOvertime ? (
+        <div className="flex flex-col items-center gap-6">
+          <div
+            data-testid="timesup"
+            className="anim-glow timer-digits whitespace-nowrap font-anton text-[clamp(3.5rem,16vw,18rem)] text-red-500 md:text-[clamp(3.5rem,22vw,22rem)]"
+          >
+            TIME&apos;S UP
+          </div>
+          <div
+            data-testid="overtime-counter"
+            className="timer-digits font-anton text-[clamp(1.75rem,6vw,8rem)] text-red-500 md:text-[clamp(1.75rem,8vw,10rem)]"
+          >
+            {overtimeTime}
+          </div>
+        </div>
+      ) : (
+        <div
+          data-testid="countdown-main"
+          key={animKey}
+          className={`timer-digits font-anton text-[clamp(5rem,22vw,28rem)] leading-none md:text-[clamp(5rem,28vw,36rem)] ${mainClass}`}
+        >
+          {displayTime}
+        </div>
+      )}
+    </main>
   );
 }

@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Matador Timer — Event Countdown & Broadcast Clock',
-  description: 'Broadcast-grade event countdown timer and real-time clock system for stage events, seminars, TV broadcasts, and live streaming.',
+  title: 'Matador Timer',
+  description: 'Sederhana: kontrol, countdown, tampilan matador. Sinkron antartab.',
 };
 
 export const viewport: Viewport = {
@@ -24,3 +24,4 @@ export default function RootLayout({
     </html>
   );
 }
+
