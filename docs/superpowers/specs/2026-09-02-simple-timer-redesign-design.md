@@ -67,6 +67,8 @@ interface TimerState {
 
 Catatan: transisi `running` → `overtime` dideteksi masing-masing tab dari perhitungan remaining (remaining < 0), tanpa perlu broadcast — status overtime di state adalah turunan lokal. `paused` di overtime: freeze angka minus; resume melanjutkan overtime dari angka minus itu.
 
+Resume arithmetic (satu rumus untuk semua kasus): `startedAt = now - (duration - pausedRemaining) * 1000`. Berlaku untuk pause normal maupun pause di overtime (pausedRemaining negatif → langsung overtime lagi).
+
 ## Halaman
 
 ### Control (`/control`)
@@ -110,7 +112,7 @@ Template presentasi, 3 elemen:
 
 ### Root (`/`)
 
-Redirect ke `/control` (atau daftar link 3 tampilan).
+Redirect ke `/control`.
 
 ## Edge Cases
 
