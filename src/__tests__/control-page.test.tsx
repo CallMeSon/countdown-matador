@@ -1,5 +1,7 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_APPEARANCE } from '@/types/timer';
+import { GALLERY_BACKGROUNDS } from '@/lib/appearance';
 
 type Store = typeof import('@/lib/timer-store');
 type ControlPageType = typeof import('@/app/control/page').default;
@@ -353,6 +355,74 @@ describe('ControlPage', () => {
       expect(store.timerStore.getState().stageMessage).toBeNull();
       expect(screen.getByTestId('stage-text')).toBeTruthy();
       expect((screen.getByTestId('stage-text') as HTMLTextAreaElement).value).toBe('');
+    });
+  });
+
+  describe('tampilan', () => {
+    it('default: mode WARNA aktif, kontrol warna tampil, input URL tidak', () => {
+      render(<ControlPage />);
+      expect(screen.getByLabelText('Warna background')).toBeTruthy();
+      expect(screen.queryByLabelText('URL gambar')).toBeNull();
+    });
+
+    it('ganti mode ke GAMBAR → bgMode image, input URL + galeri muncul', () => {
+      render(<ControlPage />);
+      fireEvent.click(screen.getByRole('button', { name: 'GAMBAR' }));
+      expect(store.timerStore.getState().appearance.bgMode).toBe('image');
+      expect(screen.getByLabelText('URL gambar')).toBeTruthy();
+    });
+
+    it('ubah warna background', () => {
+      render(<ControlPage />);
+      fireEvent.change(screen.getByLabelText('Warna background'), { target: { value: '#ff0000' } });
+      expect(store.timerStore.getState().appearance.bgColor).toBe('#ff0000');
+    });
+
+    it('klik thumbnail galeri menetapkan bgImage (setelah validasi)', () => {
+      render(<ControlPage />);
+      fireEvent.click(screen.getByRole('button', { name: 'GAMBAR' }));
+      fireEvent.click(
+        screen.getByRole('button', { name: `Pilih background ${GALLERY_BACKGROUNDS[0]}` }),
+      );
+      expect(store.timerStore.getState().appearance.bgImage).toBe(GALLERY_BACKGROUNDS[0]);
+    });
+
+    it('input URL valid diterapkan saat blur, yang invalid diabaikan', () => {
+      render(<ControlPage />);
+      fireEvent.click(screen.getByRole('button', { name: 'GAMBAR' }));
+      const input = screen.getByLabelText('URL gambar');
+      fireEvent.change(input, { target: { value: 'https://example.com/a.png' } });
+      fireEvent.blur(input);
+      expect(store.timerStore.getState().appearance.bgImage).toBe('https://example.com/a.png');
+
+      fireEvent.change(input, { target: { value: 'javascript:alert(1)' } });
+      fireEvent.blur(input);
+      expect(store.timerStore.getState().appearance.bgImage).toBe('');
+    });
+
+    it('pilih font, bold, italic, warna font', () => {
+      render(<ControlPage />);
+      fireEvent.change(screen.getByLabelText('Font'), { target: { value: 'oswald' } });
+      expect(store.timerStore.getState().appearance.fontFamily).toBe('oswald');
+      fireEvent.click(screen.getByLabelText('BOLD'));
+      expect(store.timerStore.getState().appearance.bold).toBe(true);
+      fireEvent.click(screen.getByLabelText('ITALIC'));
+      expect(store.timerStore.getState().appearance.italic).toBe(true);
+      fireEvent.change(screen.getByLabelText('Warna font'), { target: { value: '#00ff00' } });
+      expect(store.timerStore.getState().appearance.fontColor).toBe('#00ff00');
+    });
+
+    it('preview memakai font terpilih', () => {
+      render(<ControlPage />);
+      fireEvent.change(screen.getByLabelText('Font'), { target: { value: 'teko' } });
+      expect(screen.getByTestId('preview-time').className).toContain('app-font-teko');
+    });
+
+    it('RESET TAMPILAN mengembalikan semua ke default', () => {
+      render(<ControlPage />);
+      fireEvent.change(screen.getByLabelText('Warna font'), { target: { value: '#00ff00' } });
+      fireEvent.click(screen.getByRole('button', { name: 'RESET TAMPILAN' }));
+      expect(store.timerStore.getState().appearance).toEqual(DEFAULT_APPEARANCE);
     });
   });
 });

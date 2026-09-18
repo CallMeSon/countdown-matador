@@ -7,8 +7,10 @@ import { useLiveClock } from '@/hooks/useLiveClock';
 import { useRoom } from '@/hooks/useRoom';
 import { timerStore } from '@/lib/timer-store';
 import { generateRoomCode } from '@/lib/room-code';
-import { PRESET_DURATIONS } from '@/types/timer';
+import { FONT_OPTIONS, GALLERY_BACKGROUNDS, appearanceClass, sanitizeImageUrl } from '@/lib/appearance';
+import { DEFAULT_APPEARANCE, PRESET_DURATIONS } from '@/types/timer';
 import { NavLinkMenu } from '@/components/NavLinkMenu';
+import { StageBackground } from '@/components/StageBackground';
 
 const PRESET_LABELS: Record<number, string> = {
   60: '1 MENIT',
@@ -132,6 +134,14 @@ function ControlBody({ room }: { room: string }) {
     soundOn,
   );
 
+  const appearance = state.appearance ?? DEFAULT_APPEARANCE;
+  const appClass = appearanceClass(appearance);
+  const [imageUrl, setImageUrl] = useState(appearance.bgImage);
+
+  useEffect(() => {
+    setImageUrl(appearance.bgImage);
+  }, [appearance.bgImage]);
+
   const statusLabel: Record<string, string> = {
     idle: 'SIAP',
     running: 'JALAN',
@@ -206,13 +216,15 @@ function ControlBody({ room }: { room: string }) {
             </div>
           )}
 
-          <div className="relative flex-1 rounded-2xl border border-zinc-800 bg-black p-10 text-center shadow-[0_0_40px_-15px_rgba(0,0,0,0.8)]">
+          <div className="relative flex-1 overflow-hidden rounded-2xl border border-zinc-800 p-10 text-center shadow-[0_0_40px_-15px_rgba(0,0,0,0.8)]">
+            <StageBackground appearance={appearance} />
             <div
               key={adjustPulse}
               data-testid="preview-time"
-              className={`timer-digits font-anton text-8xl md:text-9xl ${
-                isOvertime ? 'text-red-500' : 'text-white'
-              } ${adjustPulse > 0 ? 'anim-pop' : ''}`}
+              style={isOvertime ? undefined : { color: appearance.fontColor }}
+              className={`relative z-10 timer-digits font-anton text-8xl md:text-9xl ${
+                isOvertime ? 'text-red-500' : ''
+              } ${adjustPulse > 0 ? 'anim-pop' : ''}${appClass ? ` ${appClass}` : ''}`}
             >
               {displayTime}
             </div>
@@ -220,7 +232,7 @@ function ControlBody({ room }: { room: string }) {
               <div
                 key={flash.id}
                 onAnimationEnd={() => setFlash(null)}
-                className={`anim-adjust-float pointer-events-none absolute right-6 top-6 text-2xl font-bold tracking-wider ${
+                className={`anim-adjust-float pointer-events-none absolute right-6 top-6 z-10 text-2xl font-bold tracking-wider ${
                   flash.delta > 0 ? 'text-emerald-400' : 'text-red-400'
                 }`}
               >
@@ -476,6 +488,142 @@ function ControlBody({ room }: { room: string }) {
               </button>
             </div>
           )}
+        </section>
+
+        {/* Tampilan display: background, font, warna font */}
+        <section>
+          <h2 className="mb-3 text-xs font-semibold tracking-widest text-zinc-400">TAMPILAN</h2>
+
+          <div className="mb-3 flex gap-3">
+            <button
+              onClick={() => timerStore.setAppearance({ bgMode: 'color' })}
+              className={`flex-1 rounded-xl border px-4 py-3 font-semibold tracking-wider transition-all active:scale-95 ${
+                appearance.bgMode === 'color'
+                  ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
+                  : 'border-zinc-800 bg-zinc-900 hover:border-zinc-600'
+              }`}
+            >
+              WARNA
+            </button>
+            <button
+              onClick={() => timerStore.setAppearance({ bgMode: 'image' })}
+              className={`flex-1 rounded-xl border px-4 py-3 font-semibold tracking-wider transition-all active:scale-95 ${
+                appearance.bgMode === 'image'
+                  ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
+                  : 'border-zinc-800 bg-zinc-900 hover:border-zinc-600'
+              }`}
+            >
+              GAMBAR
+            </button>
+          </div>
+
+          {appearance.bgMode === 'color' ? (
+            <label className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-xs font-semibold tracking-widest text-zinc-400">
+              WARNA BACKGROUND
+              <input
+                type="color"
+                aria-label="Warna background"
+                value={appearance.bgColor}
+                onChange={(e) => timerStore.setAppearance({ bgColor: e.target.value })}
+                className="h-8 w-12 rounded"
+              />
+            </label>
+          ) : (
+            <div className="space-y-3">
+              <input
+                aria-label="URL gambar"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                onBlur={() => timerStore.setAppearance({ bgImage: sanitizeImageUrl(imageUrl) })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') timerStore.setAppearance({ bgImage: sanitizeImageUrl(imageUrl) });
+                }}
+                placeholder="https://... atau /backgrounds/..."
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white focus:border-emerald-500 focus:outline-none"
+              />
+              <div className="grid grid-cols-6 gap-2">
+                {GALLERY_BACKGROUNDS.map((path) => (
+                  <button
+                    key={path}
+                    aria-label={`Pilih background ${path}`}
+                    onClick={() => timerStore.setAppearance({ bgImage: path })}
+                    className={`h-12 overflow-hidden rounded-lg border ${
+                      appearance.bgImage === path ? 'border-emerald-500' : 'border-zinc-800'
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={path} alt="" className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => timerStore.setAppearance({ bgImage: '' })}
+                className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2 text-xs font-semibold tracking-widest hover:bg-zinc-700"
+              >
+                KOSONGKAN GAMBAR
+              </button>
+            </div>
+          )}
+
+          <div className="mt-4 space-y-3">
+            <label className="block text-xs font-semibold tracking-widest text-zinc-400">
+              FONT
+              <select
+                aria-label="Font"
+                value={appearance.fontFamily}
+                onChange={(e) =>
+                  timerStore.setAppearance({ fontFamily: e.target.value as typeof appearance.fontFamily })
+                }
+                className="mt-1 w-full cursor-pointer rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm font-semibold tracking-widest text-white focus:border-emerald-500 focus:outline-none"
+              >
+                {FONT_OPTIONS.map((f) => (
+                  <option key={f.key} value={f.key}>
+                    {f.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-xs font-semibold tracking-widest text-zinc-400">
+                <input
+                  type="checkbox"
+                  aria-label="BOLD"
+                  checked={appearance.bold}
+                  onChange={(e) => timerStore.setAppearance({ bold: e.target.checked })}
+                  className="h-4 w-4 rounded border-zinc-700 bg-zinc-900 accent-emerald-500"
+                />
+                BOLD
+              </label>
+              <label className="flex items-center gap-2 text-xs font-semibold tracking-widest text-zinc-400">
+                <input
+                  type="checkbox"
+                  aria-label="ITALIC"
+                  checked={appearance.italic}
+                  onChange={(e) => timerStore.setAppearance({ italic: e.target.checked })}
+                  className="h-4 w-4 rounded border-zinc-700 bg-zinc-900 accent-emerald-500"
+                />
+                ITALIC
+              </label>
+              <label className="ml-auto flex items-center gap-2 text-xs font-semibold tracking-widest text-zinc-400">
+                WARNA FONT
+                <input
+                  type="color"
+                  aria-label="Warna font"
+                  value={appearance.fontColor}
+                  onChange={(e) => timerStore.setAppearance({ fontColor: e.target.value })}
+                  className="h-8 w-12 rounded"
+                />
+              </label>
+            </div>
+
+            <button
+              onClick={() => timerStore.setAppearance(DEFAULT_APPEARANCE)}
+              className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-6 py-3 font-semibold tracking-widest transition-transform active:scale-95 hover:bg-zinc-700"
+            >
+              RESET TAMPILAN
+            </button>
+          </div>
         </section>
 
         {/* Navigasi halaman */}
