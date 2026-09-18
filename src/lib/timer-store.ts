@@ -1,7 +1,7 @@
 'use client';
 
 import { TimerState, DEFAULT_TIMER_STATE } from '@/types/timer';
-import { mergeIncomingState } from '@/lib/appearance';
+import { mergeIncomingState, sanitizeImageUrl } from '@/lib/appearance';
 
 type Message =
   | { type: 'STATE'; state: TimerState }
@@ -158,7 +158,18 @@ class TimerStore {
 
   setAppearance(patch: Partial<TimerState['appearance']>): void {
     if (!this.room) return;
-    this.setState({ ...this.state, appearance: { ...this.state.appearance, ...patch } }, true);
+    const nextPatch = { ...patch };
+    if ('bgImage' in nextPatch) {
+      // Validasi di titik masuk store, bukan cuma di UI, supaya caller mana pun
+      // (termasuk patch dari peer) dapat jaminan URL yang sama.
+      nextPatch.bgImage = sanitizeImageUrl(
+        typeof nextPatch.bgImage === 'string' ? nextPatch.bgImage : '',
+      );
+    }
+    this.setState(
+      { ...this.state, appearance: { ...this.state.appearance, ...nextPatch } },
+      true,
+    );
   }
 
   sendStageMessage(text: string, showOnTimer: boolean): void {

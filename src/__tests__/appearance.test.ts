@@ -63,6 +63,34 @@ describe('mergeIncomingState', () => {
     const appearance = { ...DEFAULT_APPEARANCE, fontFamily: 'teko' as const, bold: true };
     expect(mergeIncomingState({ ...DEFAULT_TIMER_STATE, appearance }).appearance).toEqual(appearance);
   });
+
+  it('menyanitasi bgImage dari state yang masuk tanpa menolak galeri/http(s) valid', () => {
+    const bad = mergeIncomingState({
+      ...DEFAULT_TIMER_STATE,
+      appearance: { ...DEFAULT_APPEARANCE, bgMode: 'image', bgImage: 'javascript:alert(1)' },
+    });
+    expect(bad.appearance.bgImage).toBe('');
+
+    const gallery = mergeIncomingState({
+      ...DEFAULT_TIMER_STATE,
+      appearance: { ...DEFAULT_APPEARANCE, bgMode: 'image', bgImage: '/backgrounds/grid-dark.svg' },
+    });
+    expect(gallery.appearance.bgImage).toBe('/backgrounds/grid-dark.svg');
+
+    const remote = mergeIncomingState({
+      ...DEFAULT_TIMER_STATE,
+      appearance: { ...DEFAULT_APPEARANCE, bgMode: 'image', bgImage: ' https://example.com/a.png ' },
+    });
+    expect(remote.appearance.bgImage).toBe('https://example.com/a.png');
+  });
+
+  it('bgImage non-string dari state yang masuk dinormalisasi ke kosong', () => {
+    const merged = mergeIncomingState({
+      ...DEFAULT_TIMER_STATE,
+      appearance: { ...DEFAULT_APPEARANCE, bgImage: 42 as unknown as string },
+    });
+    expect(merged.appearance.bgImage).toBe('');
+  });
 });
 
 describe('FONT_OPTIONS / GALLERY_BACKGROUNDS', () => {

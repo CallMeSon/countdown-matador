@@ -133,7 +133,16 @@ wss.on('connection', (socket, req) => {
     if (!currentRoom) return;
 
     if (msg.type === 'STATE' && msg.state && typeof msg.state === 'object') {
-      currentRoom.state = msg.state;
+      // Pesan dari client lama bisa datang tanpa `appearance`; jangan biarkan itu
+      // menghapus styling room. Pakai appearance baru kalau ada, kalau tidak
+      // pertahankan punya room, dan selalu isi field yang hilang dari default.
+      const baseAppearance =
+        (currentRoom.state && currentRoom.state.appearance) || DEFAULT_STATE.appearance;
+      currentRoom.state = {
+        ...DEFAULT_STATE,
+        ...msg.state,
+        appearance: { ...DEFAULT_STATE.appearance, ...(msg.state.appearance || baseAppearance) },
+      };
       currentRoom.updatedAt = Date.now();
       persistRooms();
       // Fan out ke client lain di room yang sama, jangan echo ke pengirim.

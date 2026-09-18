@@ -62,9 +62,13 @@ export function appearanceClass(a: AppearanceConfig): string {
 }
 
 export function mergeIncomingState(state: Partial<TimerState>): TimerState {
+  const appearance = normalizeAppearance(state.appearance);
   return {
     ...DEFAULT_TIMER_STATE,
     ...state,
-    appearance: normalizeAppearance(state.appearance),
+    appearance: {
+      ...appearance,
+      bgImage: sanitizeImageUrl(typeof appearance.bgImage === 'string' ? appearance.bgImage : ''),
+    },
   };
 }

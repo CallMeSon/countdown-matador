@@ -1,6 +1,5 @@
 import { act, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_APPEARANCE } from '@/types/timer';
 
 type Store = typeof import('@/lib/timer-store');
 
@@ -186,6 +185,28 @@ describe('TimerPage', () => {
       const digit = screen.getByTestId('countdown-main');
       expect(digit.className).toContain('text-red-500');
       expect(digit.style.color).toBe('');
+    });
+
+    it('detik 6-10 dapat warna amber dan mengabaikan warna font kustom', async () => {
+      store.timerStore.setAppearance({ fontColor: '#ff0000' });
+      render(<TimerPage />);
+      act(() => {
+        store.timerStore.setDuration(8);
+        store.timerStore.start();
+      });
+      await act(async () => { await new Promise((r) => setTimeout(r, 100)); });
+      const digit = screen.getByTestId('countdown-main');
+      expect(digit.className).toContain('text-amber-400');
+      expect(digit.style.color).toBe('');
+    });
+
+    it('tanpa kondisi kritis, digit memakai warna font kustom inline', () => {
+      store.timerStore.setAppearance({ fontColor: '#0000ff' });
+      render(<TimerPage />);
+      const digit = screen.getByTestId('countdown-main');
+      expect(digit.className).not.toContain('text-amber-400');
+      expect(digit.className).not.toContain('text-red-500');
+      expect(digit.style.color).toMatch(/0,\s*0,\s*255|#0000ff|rgb\(0, 0, 255\)/i);
     });
 
     it('digit jam tetap emerald walau fontColor diubah', () => {

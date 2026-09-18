@@ -240,5 +240,14 @@ describe('timerStore', () => {
       expect(store.timerStore.getState().duration).toBe(120);
       expect(store.timerStore.getState().appearance.bold).toBe(true);
     });
+
+    it('setAppearance menyanitasi bgImage tidak aman, valid tetap lolos', () => {
+      store.timerStore.setAppearance({ bgImage: 'javascript:alert(1)' });
+      expect(store.timerStore.getState().appearance.bgImage).toBe('');
+      store.timerStore.setAppearance({ bgImage: 'https://example.com/a.png' });
+      expect(store.timerStore.getState().appearance.bgImage).toBe('https://example.com/a.png');
+      store.timerStore.setAppearance({ bgImage: '/backgrounds/grid-dark.svg' });
+      expect(store.timerStore.getState().appearance.bgImage).toBe('/backgrounds/grid-dark.svg');
+    });
   });
 });

@@ -127,9 +127,14 @@ function MatadorDisplay() {
             </span>
           )}
 
+          {/* Kolom tengah: ticker pesan panggung (prioritas, dapat lebar penuh
+              waktu label disembunyikan) / badge overtime / kosong */}
           <div className="flex min-w-0 flex-1 justify-center">
             {tickerMounted && lastMessage ? (
               <div className={`w-full max-w-full overflow-hidden rounded-lg ${tickerExiting ? 'anim-timesup-out' : 'anim-badge-in'}`}>
+                {/* Class blink & entrance/exit dipisah 2 elemen — keduanya nyetel properti CSS
+                    `animation`, kalau digabung di 1 elemen yang belakangan di stylesheet
+                    menang total dan nge-cancel animasi yang lain. */}
                 <div
                   data-testid="stage-ticker"
                   className={`overflow-hidden rounded-lg py-2 ${stageBlinking ? 'anim-ticker-blink' : 'bg-red-700'}`}
