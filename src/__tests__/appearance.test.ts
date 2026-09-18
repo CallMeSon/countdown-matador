@@ -27,6 +27,10 @@ describe('sanitizeImageUrl', () => {
     expect(sanitizeImageUrl('/backgrounds/grid-dark.svg')).toBe('/backgrounds/grid-dark.svg');
   });
 
+  it('menerima path upload /uploads/', () => {
+    expect(sanitizeImageUrl('/uploads/0f9a.png')).toBe('/uploads/0f9a.png');
+  });
+
   it('menolak skema berbahaya, relatif, dan kosong', () => {
     expect(sanitizeImageUrl('javascript:alert(1)')).toBe('');
     expect(sanitizeImageUrl('data:image/png;base64,AAAA')).toBe('');

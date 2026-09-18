@@ -31,7 +31,7 @@ export const GALLERY_BACKGROUNDS: string[] = [
   '/backgrounds/dots-dark.svg',
 ];
 
-const GALLERY_PREFIX = '/backgrounds/';
+const ALLOWED_LOCAL_PREFIXES = ['/backgrounds/', '/uploads/'];
 const MAX_IMAGE_URL_LENGTH = 2048;
 
 export function normalizeAppearance(
@@ -43,7 +43,7 @@ export function normalizeAppearance(
 export function sanitizeImageUrl(raw: string): string {
   const url = raw.trim();
   if (!url || url.length > MAX_IMAGE_URL_LENGTH) return '';
-  if (url.startsWith(GALLERY_PREFIX)) return url;
+  if (ALLOWED_LOCAL_PREFIXES.some((prefix) => url.startsWith(prefix))) return url;
   try {
     const { protocol } = new URL(url);
     if (protocol === 'http:' || protocol === 'https:') return url;
