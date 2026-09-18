@@ -7,7 +7,7 @@ const os = require('os');
 const path = require('path');
 const { EventEmitter } = require('node:events');
 const { Readable } = require('node:stream');
-const { createUploadHandler, pruneUploads } = require('./upload-handler');
+const { createUploadHandler, pruneUploads, readPositiveNumber } = require('./upload-handler');
 
 const png = () =>
   Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x00]);
@@ -114,4 +114,16 @@ test('pruneUploads menghapus file lebih tua dari maxAgeMs', async () => {
 
 test('pruneUploads pada folder yang belum ada → 0', async () => {
   assert.equal(await pruneUploads({ dir: path.join(tmpDir(), 'nope') }), 0);
+});
+
+test('readPositiveNumber: angka valid lolos, sisanya fallback', () => {
+  assert.equal(readPositiveNumber('30', 7), 30);
+  assert.equal(readPositiveNumber(1024, 7), 1024);
+  assert.equal(readPositiveNumber('0.5', 7), 0.5);
+  assert.equal(readPositiveNumber('thirty', 7), 7);
+  assert.equal(readPositiveNumber('', 7), 7);
+  assert.equal(readPositiveNumber('0', 7), 7);
+  assert.equal(readPositiveNumber(-1, 7), 7);
+  assert.equal(readPositiveNumber(undefined, 7), 7);
+  assert.equal(readPositiveNumber(NaN, 7), 7);
 });

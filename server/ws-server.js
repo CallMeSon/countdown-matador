@@ -12,15 +12,15 @@ const path = require('path');
 const { parse: parseUrl } = require('url');
 const WebSocket = require('ws');
 const http = require('http');
-const { createUploadHandler, pruneUploads } = require('./upload-handler');
+const { createUploadHandler, pruneUploads, readPositiveNumber } = require('./upload-handler');
 
 const PORT = Number(process.env.PORT || 8081);
 const STATE_FILE = process.env.STATE_FILE || path.join(__dirname, 'state.json');
 const HEARTBEAT_MS = 30000;
 const PRUNE_MS = 7 * 24 * 60 * 60 * 1000; // 7 hari
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
-const UPLOAD_MAX_AGE_MS = Number(process.env.UPLOAD_MAX_AGE_DAYS || 30) * 24 * 60 * 60 * 1000;
-const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_BYTES || 8 * 1024 * 1024);
+const UPLOAD_MAX_AGE_MS = readPositiveNumber(process.env.UPLOAD_MAX_AGE_DAYS, 30) * 24 * 60 * 60 * 1000;
+const MAX_UPLOAD_BYTES = readPositiveNumber(process.env.MAX_UPLOAD_BYTES, 8 * 1024 * 1024);
 
 const DEFAULT_STATE = {
   status: 'idle',
@@ -127,7 +127,9 @@ const pruneTimer = setInterval(() => {
 }, 24 * 60 * 60 * 1000);
 pruneTimer.unref();
 
-pruneUploads({ dir: UPLOAD_DIR, maxAgeMs: UPLOAD_MAX_AGE_MS }).catch(() => {});
+pruneUploads({ dir: UPLOAD_DIR, maxAgeMs: UPLOAD_MAX_AGE_MS }).catch((err) =>
+  console.error('[timer-ws] prune failed:', err.message),
+);
 
 function send(socket, msg) {
   if (socket.readyState === WebSocket.OPEN) {

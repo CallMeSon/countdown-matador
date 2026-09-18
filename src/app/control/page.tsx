@@ -515,7 +515,10 @@ function ControlBody({ room }: { room: string }) {
 
           <div className="mb-3 flex gap-3">
             <button
-              onClick={() => timerStore.setAppearance({ bgMode: 'color' })}
+              onClick={() => {
+                setUploadError(null);
+                timerStore.setAppearance({ bgMode: 'color' });
+              }}
               className={`flex-1 rounded-xl border px-4 py-3 font-semibold tracking-wider transition-all active:scale-95 ${
                 appearance.bgMode === 'color'
                   ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
@@ -525,7 +528,10 @@ function ControlBody({ room }: { room: string }) {
               WARNA
             </button>
             <button
-              onClick={() => timerStore.setAppearance({ bgMode: 'image' })}
+              onClick={() => {
+                setUploadError(null);
+                timerStore.setAppearance({ bgMode: 'image' });
+              }}
               className={`flex-1 rounded-xl border px-4 py-3 font-semibold tracking-wider transition-all active:scale-95 ${
                 appearance.bgMode === 'image'
                   ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
@@ -571,7 +577,10 @@ function ControlBody({ room }: { room: string }) {
               <input
                 aria-label="URL gambar"
                 value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
+                onChange={(e) => {
+                  setUploadError(null);
+                  setImageUrl(e.target.value);
+                }}
                 onBlur={() => timerStore.setAppearance({ bgImage: sanitizeImageUrl(imageUrl) })}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') timerStore.setAppearance({ bgImage: sanitizeImageUrl(imageUrl) });

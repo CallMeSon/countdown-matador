@@ -55,4 +55,16 @@ describe('uploadImage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) }));
     await expect(uploadImage(file('image/png', 10))).rejects.toThrow(/tidak valid/);
   });
+
+  it('respons 200 non-JSON → error ramah, bukan SyntaxError', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.reject(new Error('bad')),
+      }),
+    );
+    await expect(uploadImage(file('image/png', 10))).rejects.toThrow(/tidak valid/);
+  });
 });

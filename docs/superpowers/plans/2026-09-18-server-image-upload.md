@@ -939,6 +939,7 @@ git commit -m "feat: add image upload button to control page"
 - [ ] `npm run lint` PASS
 - [ ] `npm run typecheck` PASS
 - [ ] Smoke test manual (di server, setelah deploy): `curl -sS -X POST --data-binary @gambar.png http://127.0.0.1:8080/upload` → `{"url":"/uploads/...png"}`, lalu `curl -I` URL-nya → `200`.
+- [ ] Risiko volume upload publik tanpa rate limit **diterima** (mitigasi: 8 MB/file, whitelist tipe, nama acak, prune 30 hari); dapat dikurangi via `limit_req`/`limit_conn` nginx bila perlu.
 
 ## Catatan urutan & dependency
 

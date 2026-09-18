@@ -107,9 +107,16 @@ async function pruneUploads(options) {
   return removed;
 }
 
+/** Angka positif dari env/opsi; fallback kalau bukan angka finite > 0. */
+function readPositiveNumber(value, fallback) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
 module.exports = {
   createUploadHandler,
   pruneUploads,
+  readPositiveNumber,
   DEFAULT_MAX_UPLOAD_BYTES,
   DEFAULT_MAX_AGE_MS,
 };

@@ -36,3 +36,8 @@ test('extForType', () => {
   assert.equal(extForType('gif'), null);
   assert.deepEqual(EXT_BY_TYPE, { jpeg: 'jpg', png: 'png', webp: 'webp' });
 });
+
+test('extForType: key warisan object → null (total)', () => {
+  assert.equal(extForType('toString'), null);
+  assert.equal(extForType('constructor'), null);
+});

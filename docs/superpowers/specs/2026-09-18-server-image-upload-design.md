@@ -27,6 +27,7 @@ serta menyajikan `/uploads/` sebagai file statis.
 | Validasi tipe | magic bytes: JPEG / PNG / WebP (SVG & GIF ditolak) |
 | Batas ukuran | 8 MB (dicek saat streaming; lebih → `413`) |
 | Proteksi | terbuka + batas ketat; nama file acak dari server |
+| Risiko volume | diterima untuk saat ini — publik tanpa rate limit (lihat catatan di bagian deploy) |
 | Storage | `/var/lib/timer-ws/uploads` (env `UPLOAD_DIR`), owner `www-data` |
 | Serving | nginx `location /uploads/` alias + `X-Content-Type-Options: nosniff` |
 | Cleanup | auto-hapus file >30 hari (env `UPLOAD_MAX_AGE_DAYS`) |
@@ -308,6 +309,15 @@ Verifikasi (di server):
 curl -sS -X POST --data-binary @gambar.jpg http://127.0.0.1:8080/upload
 curl -sS -I http://127.0.0.1:8080/uploads/<file>
 ```
+
+### Risiko volume upload (diterima)
+
+`/upload` bersifat publik dan saat ini **tanpa rate limit**; tidak ada yang membatasi laju upload
+maupun total byte yang tersimpan. Mitigasi yang ada hanya batas 8 MB/file, whitelist tipe via magic
+bytes, nama file acak dari server, dan prune otomatis 30 hari. **Risiko volume / disk exhaustion
+diterima** untuk saat ini. Bila nanti perlu dikurangi, tambahkan `limit_req`/`limit_conn` di nginx —
+`limit_req_zone` harus didefinisikan di blok `http` nginx.conf, bukan di dalam `server` block, baru
+dipakai di `location /upload`.
 
 ## Edge cases
 

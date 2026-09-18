@@ -21,7 +21,7 @@ function detectImageType(buf) {
 }
 
 function extForType(type) {
-  return EXT_BY_TYPE[type] || null;
+  return Object.prototype.hasOwnProperty.call(EXT_BY_TYPE, type) ? EXT_BY_TYPE[type] : null;
 }
 
 module.exports = { EXT_BY_TYPE, detectImageType, extForType };

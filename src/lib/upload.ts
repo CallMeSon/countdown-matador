@@ -27,7 +27,12 @@ export async function uploadImage(file: File, endpoint: string = UPLOAD_ENDPOINT
     throw new Error(message);
   }
 
-  const data = (await res.json()) as { url?: unknown };
+  let data: { url?: unknown };
+  try {
+    data = (await res.json()) as { url?: unknown };
+  } catch {
+    throw new Error('Respons upload tidak valid.');
+  }
   if (typeof data.url !== 'string' || !data.url) {
     throw new Error('Respons upload tidak valid.');
   }

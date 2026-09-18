@@ -31,6 +31,12 @@ describe('sanitizeImageUrl', () => {
     expect(sanitizeImageUrl('/uploads/0f9a.png')).toBe('/uploads/0f9a.png');
   });
 
+  it('menolak near-miss /uploads (protokol-relative & prefix tanpa slash)', () => {
+    expect(sanitizeImageUrl('//uploads/x.png')).toBe('');
+    expect(sanitizeImageUrl('/uploadsX')).toBe('');
+    expect(sanitizeImageUrl('/uploads/x.png')).toBe('/uploads/x.png');
+  });
+
   it('menolak skema berbahaya, relatif, dan kosong', () => {
     expect(sanitizeImageUrl('javascript:alert(1)')).toBe('');
     expect(sanitizeImageUrl('data:image/png;base64,AAAA')).toBe('');
