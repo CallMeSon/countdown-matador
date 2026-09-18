@@ -22,7 +22,7 @@ sama dan tersimpan di `state.json` server.
 | Warna vs gambar | Pemilih mode: `WARNA` atau `GAMBAR` (warna jadi fallback di mode gambar) |
 | Cakupan font | Semua teks display (digit, label, ticker, kartu pesan) |
 | Bold/italic | Toggle, berlaku ke semua teks display |
-| Warna font | Berlaku ke digit + label (teks non-peringatan). Peringatan tetap override |
+| Warna font | Berlaku ke digit countdown + label saat tidak peringatan. Digit jam tetap emerald, peringatan tetap override |
 | Teks ticker/kartu pesan | Tetap putih (dibaca di atas background merah) |
 
 ## Data model
@@ -152,10 +152,11 @@ Kelas ini ditempel ke semua elemen teks display (digit, label, ticker, kartu pes
 
 Warna font:
 
-- Untuk digit countdown/clock dan label, kalau **tidak** dalam keadaan peringatan, pakai inline
+- Untuk digit countdown dan label, kalau **tidak** dalam keadaan peringatan, pakai inline
   `style={{ color: appearance.fontColor }}` (inline menang atas kelas `text-white`).
 - Keadaan peringatan tetap seperti sekarang: `text-amber-400` (≤10 dtk) dan `text-red-500`
   (≤5 dtk / overtime) — override warna kustom.
+- Digit jam (`displayMode === 'clock'`) tetap emerald (warna penanda mode, sama seperti peringatan).
 - Badge overtime dan teks ticker/kartu pesan tetap putih.
 
 ## Edge cases
