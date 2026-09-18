@@ -181,4 +181,56 @@ describe('MatadorPage', () => {
       vi.useRealTimers();
     });
   });
+
+  describe('appearance', () => {
+    it('background color diterapkan', () => {
+      store.timerStore.setAppearance({ bgMode: 'color', bgColor: '#123456' });
+      render(<MatadorPage />);
+      expect(screen.getByTestId('stage-background').style.backgroundColor).toContain('18');
+    });
+
+    it('background image dirender saat mode image', () => {
+      store.timerStore.setAppearance({ bgMode: 'image', bgImage: '/backgrounds/grid-dark.svg' });
+      render(<MatadorPage />);
+      expect(screen.getByTestId('stage-background-image').getAttribute('src')).toBe(
+        '/backgrounds/grid-dark.svg',
+      );
+    });
+
+    it('font & warna font kustom diterapkan ke label dan digit', () => {
+      store.timerStore.setAppearance({ fontFamily: 'oswald', fontColor: '#ff0000' });
+      render(<MatadorPage />);
+      const label = screen.getByTestId('matador-label');
+      const digit = screen.getByTestId('matador-timer');
+      expect(label.className).toContain('app-font-oswald');
+      expect(label.style.color).toMatch(/255|#ff0000/i);
+      expect(digit.className).toContain('app-font-oswald');
+      expect(digit.style.color).toMatch(/255|#ff0000/i);
+    });
+
+    it('saat overtime, digit tetap merah walau fontColor diubah', async () => {
+      store.timerStore.setAppearance({ fontColor: '#ff0000' });
+      render(<MatadorPage />);
+      const timerStore = store.timerStore;
+      act(() => {
+        timerStore.setDuration(5);
+        timerStore.start();
+        timerStore.getState().startedAt = Date.now() - 8_000;
+      });
+      await act(async () => { await new Promise((r) => setTimeout(r, 100)); });
+      const overtime = screen.getByTestId('matador-overtime');
+      expect(overtime.className).toContain('text-red-500');
+      expect(overtime.style.color).toBe('');
+    });
+
+    it('digit jam tetap emerald walau fontColor diubah', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2024, 0, 1, 8, 5, 9));
+      store.timerStore.setAppearance({ fontColor: '#ff0000' });
+      store.timerStore.setDisplayMode('clock');
+      render(<MatadorPage />);
+      expect(screen.getByTestId('matador-clock').className).toContain('text-emerald-400');
+      vi.useRealTimers();
+    });
+  });
 });
