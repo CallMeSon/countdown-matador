@@ -22,7 +22,9 @@ function makeRes() {
 }
 
 function makeReq(method, buf) {
-  const req = Readable.from(buf ? [buf] : []);
+  // autoDestroy:false → Node tidak memanggil destroy() sendiri saat stream 'end',
+  // sehingga destroy yang teramati hanya berasal dari handler.
+  const req = Readable.from(buf ? [buf] : [], { autoDestroy: false });
   req.method = method;
   req.destroyCalled = false;
   req.destroy = () => { req.destroyCalled = true; };
@@ -33,7 +35,7 @@ function run(handler, req) {
   const res = makeRes();
   return new Promise((resolve) => {
     const originalEnd = res.end.bind(res);
-    res.end = (body) => { originalEnd(body); res.emit('finish'); resolve(res); };
+    res.end = (body) => { originalEnd(body); resolve(res); };
     handler(req, res);
   });
 }
@@ -67,28 +69,32 @@ test('menolak file melebihi maxBytes', async () => {
   assert.equal(res.state.status, 413);
 });
 
-test('413: response flush (finish) mendahului req.destroy', async () => {
+test('413: destroy hanya setelah response finish, bukan saat end', async () => {
   const dir = tmpDir();
-  const req = makeReq('POST', png()); // 12 byte > 4
-  const res = makeRes();
-  let finishEmitted = false;
+  let destroyed = false;
 
-  await new Promise((resolve) => {
+  const handler = createUploadHandler({ dir, maxBytes: 4, makeId: () => 'x' });
+  const res = makeRes();
+  const req = makeReq('POST', png()); // 12 byte > 4
+  req.destroy = () => { destroyed = true; };
+
+  const endCalled = new Promise((resolve) => {
     const originalEnd = res.end.bind(res);
     res.end = (body) => {
       originalEnd(body);
-      // finish belum di-emit: destroy harus belum dipanggil saat response di-flush.
-      assert.equal(req.destroyCalled, false, 'req.destroy dipanggil sebelum finish');
-      finishEmitted = true;
-      res.emit('finish');
+      // Saat respons selesai ditulis, 'finish' belum dipancarkan,
+      // jadi destroy BELUM boleh dipanggil (kode lama akan gagal di sini).
+      assert.equal(destroyed, false, 'destroy tidak boleh dipanggil sebelum finish');
       resolve();
     };
-    createUploadHandler({ dir, maxBytes: 4 })(req, res);
   });
 
-  assert.equal(res.state.status, 413);
-  assert.equal(finishEmitted, true);
-  assert.equal(req.destroyCalled, true, 'req.destroy tidak dipanggil setelah finish');
+  handler(req, res);
+  await endCalled;
+
+  assert.equal(destroyed, false, 'destroy harus menunggu finish');
+  res.emit('finish');
+  assert.equal(destroyed, true, 'destroy harus dipanggil setelah finish');
 });
 
 test('pruneUploads menghapus file lebih tua dari maxAgeMs', async () => {
