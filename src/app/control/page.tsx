@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTimer } from '@/hooks/useTimer';
 import { useCountdownBeep } from '@/hooks/useCountdownBeep';
 import { useLiveClock } from '@/hooks/useLiveClock';
@@ -8,6 +8,7 @@ import { useRoom } from '@/hooks/useRoom';
 import { timerStore } from '@/lib/timer-store';
 import { generateRoomCode } from '@/lib/room-code';
 import { FONT_OPTIONS, GALLERY_BACKGROUNDS, appearanceClass, sanitizeImageUrl } from '@/lib/appearance';
+import { uploadImage } from '@/lib/upload';
 import { DEFAULT_APPEARANCE, PRESET_DURATIONS } from '@/types/timer';
 import { NavLinkMenu } from '@/components/NavLinkMenu';
 import { StageBackground } from '@/components/StageBackground';
@@ -141,6 +142,24 @@ function ControlBody({ room }: { room: string }) {
   useEffect(() => {
     setImageUrl(appearance.bgImage);
   }, [appearance.bgImage]);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const handleUpload = async (file: File | undefined) => {
+    if (!file) return;
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const url = await uploadImage(file);
+      timerStore.setAppearance({ bgMode: 'image', bgImage: url });
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload gagal.');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const statusLabel: Record<string, string> = {
     idle: 'SIAP',
@@ -530,6 +549,25 @@ function ControlBody({ room }: { room: string }) {
             </label>
           ) : (
             <div className="space-y-3">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="w-full rounded-xl border border-emerald-700 bg-emerald-900/20 px-4 py-3 font-semibold tracking-widest text-emerald-400 transition-transform active:scale-95 hover:bg-emerald-900/40 disabled:opacity-40 disabled:active:scale-100"
+              >
+                {uploading ? 'MENGUNGGAH…' : 'UPLOAD GAMBAR'}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                aria-label="Upload gambar"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  handleUpload(e.target.files?.[0]);
+                  e.target.value = '';
+                }}
+              />
+              {uploadError && <p className="text-xs text-red-400">{uploadError}</p>}
               <input
                 aria-label="URL gambar"
                 value={imageUrl}

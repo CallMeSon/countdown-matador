@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_APPEARANCE } from '@/types/timer';
 import { GALLERY_BACKGROUNDS } from '@/lib/appearance';
 
@@ -22,6 +22,10 @@ describe('ControlPage', () => {
     // channel lama (test sebelumnya) bisa membalas STATE basi via mock
     // BroadcastChannel; pastikan titik awal deterministik.
     store.timerStore.setDuration(300);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('render tombol preset, field menit/detik, START, RESET', () => {
@@ -423,6 +427,50 @@ describe('ControlPage', () => {
       fireEvent.change(screen.getByLabelText('Warna font'), { target: { value: '#00ff00' } });
       fireEvent.click(screen.getByRole('button', { name: 'RESET TAMPILAN' }));
       expect(store.timerStore.getState().appearance).toEqual(DEFAULT_APPEARANCE);
+    });
+
+    it('upload gambar sukses: bgImage jadi URL hasil upload', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ url: '/uploads/from-upload.png' }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      render(<ControlPage />);
+      fireEvent.click(screen.getByRole('button', { name: 'GAMBAR' }));
+
+      const input = screen.getByLabelText('Upload gambar') as HTMLInputElement;
+      const file = new File([new Uint8Array([1, 2, 3])], 'bg.png', { type: 'image/png' });
+      Object.defineProperty(input, 'files', { value: [file], configurable: true });
+      fireEvent.change(input);
+
+      await waitFor(() =>
+        expect(store.timerStore.getState().appearance.bgImage).toBe('/uploads/from-upload.png'),
+      );
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/upload',
+        expect.objectContaining({ method: 'POST' }),
+      );
+    });
+
+    it('upload gagal: pesan error tampil, bgImage tidak berubah', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({}) }),
+      );
+
+      render(<ControlPage />);
+      fireEvent.click(screen.getByRole('button', { name: 'GAMBAR' }));
+      const before = store.timerStore.getState().appearance.bgImage;
+
+      const input = screen.getByLabelText('Upload gambar') as HTMLInputElement;
+      const file = new File([new Uint8Array([1, 2, 3])], 'bg.png', { type: 'image/png' });
+      Object.defineProperty(input, 'files', { value: [file], configurable: true });
+      fireEvent.change(input);
+
+      expect(await screen.findByText(/Upload gagal/)).toBeTruthy();
+      expect(store.timerStore.getState().appearance.bgImage).toBe(before);
     });
   });
 });
