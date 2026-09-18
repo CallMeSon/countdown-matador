@@ -7,7 +7,7 @@
    ============================================================ */
 
 /* Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bebas+Neue&family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=Orbitron:wght@400..900&family=Oswald:wght@200..700&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Teko:wght@300..700&display=swap');
 
 /* Reset & Base */
 * {
@@ -300,3 +300,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .anim-badge-in {
   animation: badgeIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+/* ============================================================
+   Appearance (background / font) — kelas dari appearanceClass().
+   Default tidak menambah kelas apa pun, jadi tampilan lama tetap
+   identik; kelas ini hanya muncul saat user mengubah setting.
+   ============================================================ */
+.app-font-anton { font-family: 'Anton', sans-serif !important; }
+.app-font-bebas { font-family: 'Bebas Neue', sans-serif !important; }
+.app-font-oswald { font-family: 'Oswald', sans-serif !important; }
+.app-font-teko { font-family: 'Teko', sans-serif !important; }
+.app-font-archivo { font-family: 'Archivo Black', sans-serif !important; }
+.app-font-orbitron { font-family: 'Orbitron', sans-serif !important; }
+.app-font-robotoMono { font-family: 'Roboto Mono', monospace !important; }
+.app-bold { font-weight: 700 !important; }
+.app-italic { font-style: italic !important; }
