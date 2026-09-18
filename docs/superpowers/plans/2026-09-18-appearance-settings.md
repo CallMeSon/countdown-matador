@@ -547,7 +547,7 @@ Tambahkan di akhir `src/app/globals.css`:
 .app-font-archivo { font-family: 'Archivo Black', sans-serif !important; }
 .app-font-orbitron { font-family: 'Orbitron', sans-serif !important; }
 .app-font-robotoMono { font-family: 'Roboto Mono', monospace !important; }
-.app-bold { font-weight: 700 !important; }
+.app-bold { font-weight: 900 !important; }
 .app-italic { font-style: italic !important; }
 ```
 

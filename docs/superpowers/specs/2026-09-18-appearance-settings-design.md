@@ -77,7 +77,7 @@ export const DEFAULT_APPEARANCE: AppearanceConfig = {
 | `orbitron` | Orbitron | `'Orbitron', sans-serif` |
 | `robotoMono` | Roboto Mono | `'Roboto Mono', monospace` |
 
-Bold/italic diterapkan sebagai `font-weight: 700` / `font-style: italic`. Kalau font tidak punya
+Bold/italic diterapkan sebagai `font-weight: 900` / `font-style: italic`. Weight 900 dipakai (bukan 700) supaya teks yang sudah `font-black`/`font-extrabold` tidak jadi lebih tipis saat BOLD diaktifkan. Kalau font tidak punya
 varian tersebut, browser melakukan sintesis (faux bold/italic) — dapat diterima.
 
 ### Galeri bawaan
@@ -143,7 +143,7 @@ Helper `src/lib/appearance.ts` (dipakai `/control` preview, `/timer`, `/matador`
 `globals.css` menambah kelas kecil (default tampilan tidak berubah):
 
 - `.app-font-oswald { font-family: 'Oswald', sans-serif !important; }` dst. untuk tiap font.
-- `.app-bold { font-weight: 700 !important; }`
+- `.app-bold { font-weight: 900 !important; }`
 - `.app-italic { font-style: italic !important; }`
 
 Kelas ini ditempel ke semua elemen teks display (digit, label, ticker, kartu pesan). Selama
