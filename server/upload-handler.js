@@ -37,8 +37,8 @@ function createUploadHandler(options) {
       size += chunk.length;
       if (size > maxBytes) {
         done = true;
+        res.on('finish', () => req.destroy());
         sendJson(res, 413, { error: 'file too large' });
-        req.destroy();
         return;
       }
       chunks.push(chunk);
