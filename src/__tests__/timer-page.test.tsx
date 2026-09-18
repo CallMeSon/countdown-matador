@@ -158,6 +158,14 @@ describe('TimerPage', () => {
       expect(screen.getByTestId('stage-background').style.backgroundColor).toContain('18');
     });
 
+    it('background full-page: di luar stage container, stage tidak opaque', () => {
+      store.timerStore.setAppearance({ bgMode: 'color', bgColor: '#123456' });
+      render(<TimerPage />);
+      expect(screen.getByTestId('stage-background').closest('.timer-container')).toBeNull();
+      const stage = screen.getByTestId('countdown-main').closest('.timer-container');
+      expect(stage?.className ?? '').not.toContain('bg-black');
+    });
+
     it('background image dirender saat mode image', () => {
       store.timerStore.setAppearance({ bgMode: 'image', bgImage: '/backgrounds/grid-dark.svg' });
       render(<TimerPage />);

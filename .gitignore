@@ -8,3 +8,17 @@ out/
 .env.production
 .DS_Store
 npm-debug.log*
+
+# Upload background (dibuat saat runtime, jangan di-commit)
+/public/uploads/*
+!/public/uploads/.gitkeep
+
+# State relay + upload relay saat dijalankan lokal
+/server/state.json
+/server/uploads/
+
+# Agent scratch / artefak lokal
+.superpowers/
+
+# Log
+*.log

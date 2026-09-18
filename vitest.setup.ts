@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest';
-import { vi } from 'vitest';
+import { beforeEach, vi } from 'vitest';
 
 // Mock Next.js navigation
 vi.mock('next/navigation', () => ({
@@ -66,6 +66,12 @@ class MockBroadcastChannel {
 }
 
 (globalThis as any).BroadcastChannel = MockBroadcastChannel;
+
+// Isolasi antar-test: channel dari test sebelumnya tidak boleh ikut merespons
+// REQUEST_STATE punya test berikutnya.
+beforeEach(() => {
+  MockBroadcastChannel.channels.clear();
+});
 
 // Mock Web Audio API
 class MockAudioContext {

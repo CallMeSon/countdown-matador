@@ -96,6 +96,12 @@ Tidak ada aset biner baru; field `bgImage` menerima path `/backgrounds/...` maup
 - `server/ws-server.js` `DEFAULT_STATE` ditambah `appearance: DEFAULT_APPEARANCE` agar konsisten.
 - Karena appearance ikut `TimerState`, ia otomatis persisted ke `state.json` dan dikirim ke
   newcomer saat connect — tidak perlu pesan/protokol baru.
+- **Fallback antar-tab (BroadcastChannel).** Selain WebSocket, store membuka `BroadcastChannel`
+  per-room (`matador-timer-sync:<room>`). Setiap perubahan state di-`postMessage` ke channel itu
+  juga, dan pesan `STATE`/`REQUEST_STATE` dari channel diterapkan tanpa di-broadcast ulang. Ini
+  bikin tab se-browser (control + `/timer` + `/matador`) tetap sinkron walau relay WS tidak
+  tersedia (mis. `npm run dev` tanpa relay); saat WS hidup keduanya dipakai dan state-nya identik
+  sehingga penerapan dobel tidak berbahaya.
 
 ## UI di `/control` (section `TAMPILAN`)
 

@@ -218,11 +218,11 @@ function TimerDisplay() {
 
   return (
     <main className="fixed inset-0 flex items-center justify-center overflow-hidden bg-black">
+      <StageBackground appearance={appearance} />
       <div
-        className="timer-container relative flex items-center justify-center overflow-hidden bg-black"
+        className="timer-container relative z-10 flex items-center justify-center overflow-hidden"
         style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT, transform: `scale(${scale})` }}
       >
-        <StageBackground appearance={appearance} />
         <div
           className={`relative z-10 transition-transform duration-500 ease-out ${
             hasStageMessage ? 'scale-[0.3] -translate-y-[324px]' : ''

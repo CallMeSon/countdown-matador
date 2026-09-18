@@ -14,9 +14,13 @@ const png = () =>
 
 function makeRes() {
   const res = new EventEmitter();
-  const state = { status: 0, body: '' };
+  const state = { status: 0, body: '', headers: {} };
   res.state = state;
-  res.writeHead = function (status) { state.status = status; return this; };
+  res.writeHead = function (status, headers) {
+    state.status = status;
+    Object.assign(state.headers, headers || {});
+    return this;
+  };
   res.end = function (body) { state.body = body || ''; };
   return res;
 }
@@ -45,6 +49,19 @@ const tmpDir = () => fs.mkdtempSync(path.join(os.tmpdir(), 'upload-test-'));
 test('menolak method selain POST', async () => {
   const res = await run(createUploadHandler({ dir: tmpDir() }), makeReq('GET'));
   assert.equal(res.state.status, 405);
+});
+
+test('OPTIONS /upload → 204 dengan header CORS (preflight)', async () => {
+  const res = await run(createUploadHandler({ dir: tmpDir() }), makeReq('OPTIONS'));
+  assert.equal(res.state.status, 204);
+  assert.equal(res.state.headers['Access-Control-Allow-Origin'], '*');
+  assert.match(res.state.headers['Access-Control-Allow-Methods'], /POST/);
+});
+
+test('respons POST menyertakan header CORS', async () => {
+  const res = await run(createUploadHandler({ dir: tmpDir(), makeId: () => 'c' }), makeReq('POST', png()));
+  assert.equal(res.state.status, 200);
+  assert.equal(res.state.headers['Access-Control-Allow-Origin'], '*');
 });
 
 test('menolak file yang bukan gambar', async () => {

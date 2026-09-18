@@ -107,12 +107,11 @@ function MatadorDisplay() {
 
   return (
     <main className="fixed inset-0 flex items-center justify-center overflow-hidden bg-black">
+      <StageBackground appearance={appearance} />
       <div
-        className="timer-container flex flex-col overflow-hidden bg-black"
+        className="timer-container relative z-10 flex flex-col overflow-hidden"
         style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT, transform: `scale(${scale})` }}
       >
-        <StageBackground appearance={appearance} />
-
         {/* Bar atas: label kiri, badge overtime di tengah, timer kanan */}
         <header className="relative z-10 flex items-center gap-4 border-b border-zinc-800/60 px-6 py-2">
           {!tickerMounted && (

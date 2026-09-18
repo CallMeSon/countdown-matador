@@ -18,7 +18,7 @@ const PORT = Number(process.env.PORT || 8081);
 const STATE_FILE = process.env.STATE_FILE || path.join(__dirname, 'state.json');
 const HEARTBEAT_MS = 30000;
 const PRUNE_MS = 7 * 24 * 60 * 60 * 1000; // 7 hari
-const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '..', 'public', 'uploads');
 const UPLOAD_MAX_AGE_MS = readPositiveNumber(process.env.UPLOAD_MAX_AGE_DAYS, 30) * 24 * 60 * 60 * 1000;
 const MAX_UPLOAD_BYTES = readPositiveNumber(process.env.MAX_UPLOAD_BYTES, 8 * 1024 * 1024);
 

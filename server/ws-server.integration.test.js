@@ -63,3 +63,32 @@ test('GET /upload → 405 dan path lain → 404', async () => {
     child.kill();
   }
 });
+
+test('OPTIONS /upload → 204 dengan header CORS', async () => {
+  const { child, port } = await startServer();
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/upload`, {
+      method: 'OPTIONS',
+      headers: { Origin: 'https://app.example.com', 'Access-Control-Request-Method': 'POST' },
+    });
+    assert.equal(res.status, 204);
+    assert.equal(res.headers.get('access-control-allow-origin'), '*');
+  } finally {
+    child.kill();
+  }
+});
+
+test('POST cross-origin mengembalikan header CORS', async () => {
+  const { child, port } = await startServer();
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/upload`, {
+      method: 'POST',
+      headers: { Origin: 'https://app.example.com' },
+      body: png(),
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('access-control-allow-origin'), '*');
+  } finally {
+    child.kill();
+  }
+});

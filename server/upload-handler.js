@@ -8,8 +8,16 @@ const { detectImageType, extForType } = require('./image-types');
 const DEFAULT_MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 const DEFAULT_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
+// Endpoint ini tanpa autentikasi/kredensial, jadi origin boleh dibuka.
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Max-Age': '86400',
+};
+
 function sendJson(res, status, body) {
-  res.writeHead(status, { 'Content-Type': 'application/json' });
+  res.writeHead(status, { 'Content-Type': 'application/json', ...CORS_HEADERS });
   res.end(JSON.stringify(body));
 }
 
@@ -23,6 +31,11 @@ function createUploadHandler(options) {
   const makeId = options.makeId || (() => crypto.randomUUID());
 
   return function handleUpload(req, res) {
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, CORS_HEADERS);
+      res.end();
+      return;
+    }
     if (req.method !== 'POST') {
       sendJson(res, 405, { error: 'method not allowed' });
       return;

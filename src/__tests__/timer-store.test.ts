@@ -232,6 +232,15 @@ describe('timerStore', () => {
       expect(a.fontColor).toBe('#ffffff');
     });
 
+    it('setAppearance menyanitasi bgImage tidak aman, valid tetap lolos', () => {
+      store.timerStore.setAppearance({ bgImage: 'javascript:alert(1)' });
+      expect(store.timerStore.getState().appearance.bgImage).toBe('');
+      store.timerStore.setAppearance({ bgImage: 'https://example.com/a.png' });
+      expect(store.timerStore.getState().appearance.bgImage).toBe('https://example.com/a.png');
+      store.timerStore.setAppearance({ bgImage: '/backgrounds/grid-dark.svg' });
+      expect(store.timerStore.getState().appearance.bgImage).toBe('/backgrounds/grid-dark.svg');
+    });
+
     it('setAppearance tidak mengganggu status/durasi timer', () => {
       store.timerStore.setDuration(120);
       store.timerStore.start();
@@ -240,14 +249,31 @@ describe('timerStore', () => {
       expect(store.timerStore.getState().duration).toBe(120);
       expect(store.timerStore.getState().appearance.bold).toBe(true);
     });
+  });
 
-    it('setAppearance menyanitasi bgImage tidak aman, valid tetap lolos', () => {
-      store.timerStore.setAppearance({ bgImage: 'javascript:alert(1)' });
-      expect(store.timerStore.getState().appearance.bgImage).toBe('');
-      store.timerStore.setAppearance({ bgImage: 'https://example.com/a.png' });
-      expect(store.timerStore.getState().appearance.bgImage).toBe('https://example.com/a.png');
-      store.timerStore.setAppearance({ bgImage: '/backgrounds/grid-dark.svg' });
-      expect(store.timerStore.getState().appearance.bgImage).toBe('/backgrounds/grid-dark.svg');
+  describe('sync fallback antar-tab (BroadcastChannel)', () => {
+    it('perubahan appearance dari instance lain di room sama diterapkan', async () => {
+      const tabA = await import('@/lib/timer-store');
+      tabA.timerStore.setRoom('ROOMBC');
+      vi.resetModules();
+      const tabB = await import('@/lib/timer-store');
+      tabB.timerStore.setRoom('ROOMBC');
+
+      tabA.timerStore.setAppearance({ bgColor: '#ff0000' });
+
+      expect(tabB.timerStore.getState().appearance.bgColor).toBe('#ff0000');
+    });
+
+    it('tab baru minta state terbaru lewat BroadcastChannel', async () => {
+      const tabA = await import('@/lib/timer-store');
+      tabA.timerStore.setRoom('ROOMBC2');
+      tabA.timerStore.setAppearance({ bgColor: '#00ff00' });
+
+      vi.resetModules();
+      const tabB = await import('@/lib/timer-store');
+      tabB.timerStore.setRoom('ROOMBC2');
+
+      expect(tabB.timerStore.getState().appearance.bgColor).toBe('#00ff00');
     });
   });
 });

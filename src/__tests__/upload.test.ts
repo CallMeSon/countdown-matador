@@ -23,7 +23,7 @@ describe('uploadImage', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('POST file dan mengembalikan url', async () => {
+  it('POST file dan mengembalikan url (tanpa header Content-Type custom)', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -35,9 +35,23 @@ describe('uploadImage', () => {
     await expect(uploadImage(f, '/upload')).resolves.toBe('/uploads/abc.png');
     expect(fetchMock).toHaveBeenCalledWith('/upload', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/octet-stream' },
       body: f,
     });
+  });
+
+  it('endpoint cross-origin → url hasil dijadikan absolut', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ url: '/uploads/abc.png' }),
+      }),
+    );
+
+    await expect(uploadImage(file('image/png', 1024), 'https://timer.digioh.id/upload')).resolves.toBe(
+      'https://timer.digioh.id/uploads/abc.png',
+    );
   });
 
   it('413 / 400 / 500 → pesan error yang sesuai', async () => {

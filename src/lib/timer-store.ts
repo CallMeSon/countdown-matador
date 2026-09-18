@@ -20,9 +20,14 @@ class TimerStore {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private room: string | null = null;
   private epoch = 0;
+  private channel: BroadcastChannel | null = null;
+  private channelRoom: string | null = null;
 
   setRoom(room: string): void {
-    if (room === this.room) return;
+    if (room === this.room) {
+      this.openChannel();
+      return;
+    }
     this.epoch += 1;
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
@@ -34,8 +39,37 @@ class TimerStore {
     this.reconnectAttempts = 0;
     // Jangan nampilin countdown room lama pas transisi ke room baru
     this.setState(DEFAULT_TIMER_STATE, false);
+    this.openChannel();
     if (typeof window !== 'undefined' && typeof WebSocket !== 'undefined') {
       this.connect();
+    }
+  }
+
+  /**
+   * Fallback sinkronisasi antar-tab se-browser saat relay WebSocket tidak
+   * tersedia (mis. `next dev` tanpa relay). Saat WS hidup, keduanya dipakai —
+   * state-nya identik, jadi penerapan dobel tidak berbahaya.
+   */
+  private openChannel(): void {
+    if (typeof BroadcastChannel === 'undefined') return;
+    const name = `matador-timer-sync:${this.room ?? ''}`;
+    if (this.channelRoom === name) return;
+    this.channel?.close();
+    this.channelRoom = name;
+    const channel = new BroadcastChannel(name);
+    channel.onmessage = (e: MessageEvent<Message>) => this.onChannelMessage(e.data);
+    this.channel = channel;
+    // Tab baru: minta state terbaru dari tab lain di room yang sama.
+    channel.postMessage({ type: 'REQUEST_STATE' } satisfies Message);
+  }
+
+  private onChannelMessage(data: unknown): void {
+    const msg = data as Message | null;
+    if (!msg || typeof msg !== 'object') return;
+    if (msg.type === 'STATE' && msg.state) {
+      this.setState(mergeIncomingState(msg.state), false);
+    } else if (msg.type === 'REQUEST_STATE') {
+      this.channel?.postMessage({ type: 'STATE', state: this.state } satisfies Message);
     }
   }
 
@@ -205,6 +239,8 @@ class TimerStore {
     if (this.socket?.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify({ type: 'STATE', state: this.state } satisfies Message));
     }
+    // Channel antar-tab (selalu aktif sebagai fallback saat WS tidak terhubung).
+    this.channel?.postMessage({ type: 'STATE', state: this.state } satisfies Message);
   }
 }
 

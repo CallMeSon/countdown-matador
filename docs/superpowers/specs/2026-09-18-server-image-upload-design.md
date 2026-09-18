@@ -27,8 +27,9 @@ serta menyajikan `/uploads/` sebagai file statis.
 | Validasi tipe | magic bytes: JPEG / PNG / WebP (SVG & GIF ditolak) |
 | Batas ukuran | 8 MB (dicek saat streaming; lebih → `413`) |
 | Proteksi | terbuka + batas ketat; nama file acak dari server |
+| Cross-origin | Didukung: CORS `Access-Control-Allow-Origin: *` + preflight `OPTIONS`; URL hasil dijadikan absolut bila endpoint beda origin |
 | Risiko volume | diterima untuk saat ini — publik tanpa rate limit (lihat catatan di bagian deploy) |
-| Storage | `/var/lib/timer-ws/uploads` (env `UPLOAD_DIR`), owner `www-data` |
+| Storage | Default lokal: `public/uploads/` (di-serve static oleh Next dev); server: `/var/lib/timer-ws/uploads` via env `UPLOAD_DIR`, owner `www-data` |
 | Serving | nginx `location /uploads/` alias + `X-Content-Type-Options: nosniff` |
 | Cleanup | auto-hapus file >30 hari (env `UPLOAD_MAX_AGE_DAYS`) |
 | Kompresi | file dikirim apa adanya (tanpa downscale) |
@@ -42,9 +43,24 @@ serta menyajikan `/uploads/` sebagai file statis.
 - `200` → `{"url":"/uploads/<uuid>.<ext>"}` (`ext` = `jpg` | `png` | `webp`).
 - `400` → tipe tak dikenal / body kosong `{"error":"unsupported image type"}`.
 - `413` → body > `MAX_UPLOAD_BYTES` `{"error":"file too large"}`.
-- `405` → method selain `POST` pada `/upload`.
+- `OPTIONS` → `204` dengan header CORS (preflight).
+- `405` → method selain `POST`/`OPTIONS` pada `/upload`.
 - `404` → path lain.
 - Semua respons `Content-Type: application/json`.
+
+### CORS / cross-origin
+
+Endpoint mendukung pemakaian cross-origin (mis. frontend di Netlify/localhost dev, endpoint di
+`https://timer.digioh.id/upload`): seluruh respons `/upload` menyertakan
+`Access-Control-Allow-Origin: *`, dan preflight `OPTIONS` dibalas `204` +
+`Access-Control-Allow-Methods: POST, OPTIONS` + `Access-Control-Allow-Headers: Content-Type`.
+Endpoint tanpa autentikasi/kredensial, jadi `*` aman.
+
+Frontend **tidak** mengeset header `Content-Type` custom: browser memakai MIME `File` (`image/*`,
+safelisted) sehingga request cross-origin tidak memicu preflight; server tetap menentukan tipe dari
+magic bytes. Karena server membalas path relatif, `uploadImage` me-resolve-nya terhadap origin
+endpoint — kalau endpoint beda origin dari halaman, `bgImage` disimpan sebagai URL absolut supaya
+`<img>` menunjuk ke server upload (lihat `resolveUploadUrl`).
 
 Gambar diakses di `/uploads/<file>` (disajikan nginx sebagai static).
 
@@ -174,6 +190,14 @@ export const ALLOWED_UPLOAD_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as
 
 export const UPLOAD_ENDPOINT = process.env.NEXT_PUBLIC_UPLOAD_URL ?? '/upload';
 
+function resolveUploadUrl(url: string, endpoint: string): string {
+  const endpointUrl = new URL(endpoint, window.location.href);
+  const resolved = new URL(url, endpointUrl);
+  return resolved.origin === window.location.origin
+    ? resolved.pathname + resolved.search
+    : resolved.href;
+}
+
 export async function uploadImage(file: File, endpoint = UPLOAD_ENDPOINT): Promise<string> {
   if (!ALLOWED_UPLOAD_TYPES.includes(file.type as (typeof ALLOWED_UPLOAD_TYPES)[number])) {
     throw new Error('Format harus JPEG, PNG, atau WebP.');
@@ -181,9 +205,9 @@ export async function uploadImage(file: File, endpoint = UPLOAD_ENDPOINT): Promi
   if (file.size > MAX_UPLOAD_BYTES) {
     throw new Error('Ukuran file maksimal 8 MB.');
   }
+  // Tanpa header Content-Type custom → tidak memicu preflight saat cross-origin.
   const res = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/octet-stream' },
     body: file,
   });
   if (!res.ok) {
@@ -195,7 +219,7 @@ export async function uploadImage(file: File, endpoint = UPLOAD_ENDPOINT): Promi
   }
   const data = (await res.json()) as { url?: unknown };
   if (typeof data.url !== 'string' || !data.url) throw new Error('Respons upload tidak valid.');
-  return data.url;
+  return resolveUploadUrl(data.url, endpoint);
 }
 ```
 
@@ -221,6 +245,25 @@ Di mode `GAMBAR`, di atas/bawah input URL tambahkan tombol `UPLOAD GAMBAR` + hid
 - Tombol disabled + label "MENGUNGGAH…" saat `uploading`; reset `input.value` setelah selesai agar
   file yang sama bisa dipilih ulang.
 - Error tampil sebagai teks kecil merah di bawah tombol.
+
+### Menjalankan di dev lokal
+
+Relay tidak berjalan di `next dev`, jadi `npm run dev` sekarang menjalankan keduanya sekaligus
+lewat `scripts/dev.mjs` (relay `server/ws-server.js` di port 8081 + `next dev`; tanpa dependensi
+tambahan):
+
+```bash
+npm run dev            # relay + next dev sekaligus
+npm run dev -- -p 3099 # opsional: ganti port next dev
+```
+
+`next.config.mjs` menambah rewrite `/upload` → `http://127.0.0.1:8081/upload` **hanya saat dev**
+(build `output: export` mengabaikannya; di produksi ditangani nginx). Hasilnya same-origin, jadi
+`uploadImage` menyimpan URL relatif `/uploads/<file>` dan Next dev menyajikannya dari
+`public/uploads/`. Tidak perlu env `NEXT_PUBLIC_UPLOAD_URL` maupun CORS saat dev. Relay wajib
+hidup — kalau mati, `/upload` gagal dengan `ECONNREFUSED` (persis error proxy di atas).
+
+Butuh `next dev` saja (tanpa relay): `npm run dev:next`.
 
 ## Perubahan nginx & systemd (instruksi deploy — user yang menjalankan)
 

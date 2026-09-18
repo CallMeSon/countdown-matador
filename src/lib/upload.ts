@@ -3,6 +3,19 @@ export const ALLOWED_UPLOAD_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as
 
 export const UPLOAD_ENDPOINT = process.env.NEXT_PUBLIC_UPLOAD_URL ?? '/upload';
 
+/**
+ * Server mengembalikan path relatif (`/uploads/<file>`). Kalau endpoint-nya
+ * beda origin dari halaman, path itu harus dijadikan absolut supaya <img>
+ * menunjuk ke server upload, bukan ke origin halaman.
+ */
+function resolveUploadUrl(url: string, endpoint: string): string {
+  const endpointUrl = new URL(endpoint, window.location.href);
+  const resolved = new URL(url, endpointUrl);
+  return resolved.origin === window.location.origin
+    ? resolved.pathname + resolved.search
+    : resolved.href;
+}
+
 export async function uploadImage(file: File, endpoint: string = UPLOAD_ENDPOINT): Promise<string> {
   if (!ALLOWED_UPLOAD_TYPES.includes(file.type as (typeof ALLOWED_UPLOAD_TYPES)[number])) {
     throw new Error('Format harus JPEG, PNG, atau WebP.');
@@ -11,9 +24,11 @@ export async function uploadImage(file: File, endpoint: string = UPLOAD_ENDPOINT
     throw new Error('Ukuran file maksimal 8 MB.');
   }
 
+  // Tanpa header Content-Type custom: browser memakai MIME File (image/*,
+  // safelisted) sehingga tidak memicu preflight OPTIONS saat cross-origin.
+  // Server tetap menentukan tipe dari magic bytes.
   const res = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/octet-stream' },
     body: file,
   });
 
@@ -36,5 +51,5 @@ export async function uploadImage(file: File, endpoint: string = UPLOAD_ENDPOINT
   if (typeof data.url !== 'string' || !data.url) {
     throw new Error('Respons upload tidak valid.');
   }
-  return data.url;
+  return resolveUploadUrl(data.url, endpoint);
 }
