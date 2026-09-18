@@ -1,6 +1,7 @@
 'use client';
 
 import { TimerState, DEFAULT_TIMER_STATE } from '@/types/timer';
+import { mergeIncomingState } from '@/lib/appearance';
 
 type Message =
   | { type: 'STATE'; state: TimerState }
@@ -72,7 +73,7 @@ class TimerStore {
         // server sebelum field baru (mis. displayMode/stageMessage) ditambah ke
         // TimerState nggak akan punya field itu sama sekali (undefined, bukan
         // null), yang bisa bikin crash di consumer yang cek `!== null`.
-        this.setState({ ...DEFAULT_TIMER_STATE, ...msg.state }, false);
+        this.setState(mergeIncomingState(msg.state), false);
       } else if (msg.type === 'REQUEST_STATE') {
         this.broadcast();
       }
@@ -153,6 +154,11 @@ class TimerStore {
     if (!this.room) return;
     if (this.state.displayMode === mode) return;
     this.setState({ ...this.state, displayMode: mode }, true);
+  }
+
+  setAppearance(patch: Partial<TimerState['appearance']>): void {
+    if (!this.room) return;
+    this.setState({ ...this.state, appearance: { ...this.state.appearance, ...patch } }, true);
   }
 
   sendStageMessage(text: string, showOnTimer: boolean): void {

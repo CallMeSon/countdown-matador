@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_TIMER_STATE } from '@/types/timer';
+import { DEFAULT_APPEARANCE, DEFAULT_TIMER_STATE } from '@/types/timer';
 
 type Store = typeof import('@/lib/timer-store');
 
@@ -215,6 +215,30 @@ describe('timerStore', () => {
       store.timerStore.start();
       store.timerStore.reset();
       expect(store.timerStore.getState().stageMessage?.text).toBe('halo');
+    });
+  });
+
+  describe('appearance', () => {
+    it('default appearance sama dengan DEFAULT_APPEARANCE', () => {
+      expect(store.timerStore.getState().appearance).toEqual(DEFAULT_APPEARANCE);
+    });
+
+    it('setAppearance merge sebagian field, field lain tetap', () => {
+      store.timerStore.setAppearance({ bgMode: 'image', bgImage: 'https://example.com/a.png' });
+      const a = store.timerStore.getState().appearance;
+      expect(a.bgMode).toBe('image');
+      expect(a.bgImage).toBe('https://example.com/a.png');
+      expect(a.fontFamily).toBe('default');
+      expect(a.fontColor).toBe('#ffffff');
+    });
+
+    it('setAppearance tidak mengganggu status/durasi timer', () => {
+      store.timerStore.setDuration(120);
+      store.timerStore.start();
+      store.timerStore.setAppearance({ bold: true });
+      expect(store.timerStore.getState().status).toBe('running');
+      expect(store.timerStore.getState().duration).toBe(120);
+      expect(store.timerStore.getState().appearance.bold).toBe(true);
     });
   });
 });

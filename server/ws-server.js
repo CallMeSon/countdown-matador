@@ -24,6 +24,15 @@ const DEFAULT_STATE = {
   pausedRemaining: null,
   displayMode: 'timer',
   stageMessage: null,
+  appearance: {
+    bgMode: 'color',
+    bgColor: '#000000',
+    bgImage: '',
+    fontFamily: 'default',
+    bold: false,
+    italic: false,
+    fontColor: '#ffffff',
+  },
 };
 
 /** rooms: Map<roomId, { state: TimerState, clients: Set<WebSocket>, updatedAt: number }> */
