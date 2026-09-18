@@ -6,6 +6,38 @@ export type TimerStatus = 'idle' | 'running' | 'paused' | 'overtime';
 
 export type DisplayMode = 'timer' | 'clock';
 
+export type BackgroundMode = 'color' | 'image';
+
+export type FontKey =
+  | 'default'
+  | 'anton'
+  | 'bebas'
+  | 'oswald'
+  | 'teko'
+  | 'archivo'
+  | 'orbitron'
+  | 'robotoMono';
+
+export interface AppearanceConfig {
+  bgMode: BackgroundMode;
+  bgColor: string;   // '#rrggbb'
+  bgImage: string;   // URL http(s) atau '/backgrounds/*.svg'; '' = kosong
+  fontFamily: FontKey;
+  bold: boolean;
+  italic: boolean;
+  fontColor: string; // '#rrggbb'
+}
+
+export const DEFAULT_APPEARANCE: AppearanceConfig = {
+  bgMode: 'color',
+  bgColor: '#000000',
+  bgImage: '',
+  fontFamily: 'default',
+  bold: false,
+  italic: false,
+  fontColor: '#ffffff',
+};
+
 export interface StageMessage {
   text: string;
   sentAt: number;       // Date.now() saat dikirim — basis hitung window blink 15s
@@ -19,6 +51,7 @@ export interface TimerState {
   pausedRemaining: number | null; // sisa detik saat pause (negatif = overtime)
   displayMode: DisplayMode;    // 'timer' = countdown biasa, 'clock' = tampilkan jam saat ini
   stageMessage: StageMessage | null; // pesan ke layar panggung, null = tidak ada yang aktif
+  appearance: AppearanceConfig; // tampilan display (background/font), tersinkron per-room
 }
 
 export const DEFAULT_TIMER_STATE: TimerState = {
@@ -28,6 +61,7 @@ export const DEFAULT_TIMER_STATE: TimerState = {
   pausedRemaining: null,
   displayMode: 'timer',
   stageMessage: null,
+  appearance: DEFAULT_APPEARANCE,
 };
 
 export const CHANNEL_NAME = 'matador-timer-sync';
