@@ -9,6 +9,9 @@ import { useRoom } from '@/hooks/useRoom';
 import { STAGE_HEIGHT, STAGE_WIDTH, useStageScale } from '@/hooks/useStageScale';
 import { timerStore } from '@/lib/timer-store';
 import { timesUpPhase } from '@/lib/timer-phase';
+import { StageBackground } from '@/components/StageBackground';
+import { appearanceClass } from '@/lib/appearance';
+import { DEFAULT_APPEARANCE } from '@/types/timer';
 
 export default function TimerPage() {
   const { ready, room, lastUsedRoom, setRoom } = useRoom();
@@ -90,27 +93,39 @@ function DigitText({
   colorClass,
   animClass,
   fontSize,
+  textClass,
+  color,
 }: {
   text: string;
   testId: string;
   colorClass: string;
   animClass?: string;
   fontSize: number;
+  textClass?: string;
+  color?: string;
 }) {
   return (
     <div
       data-testid={testId}
-      style={{ fontSize, width: DIGIT_SAFE_WIDTH }}
+      style={{ fontSize, width: DIGIT_SAFE_WIDTH, ...(color ? { color } : {}) }}
       className={`timer-digits whitespace-nowrap text-center font-anton font-bold leading-none ${colorClass}${
         animClass ? ` ${animClass}` : ''
-      }`}
+      }${textClass ? ` ${textClass}` : ''}`}
     >
       {text}
     </div>
   );
 }
 
-function StageMessageCard({ text, sentAt }: { text: string; sentAt: number }) {
+function StageMessageCard({
+  text,
+  sentAt,
+  textClass,
+}: {
+  text: string;
+  sentAt: number;
+  textClass?: string;
+}) {
   const blinking = useBlinkWindow(sentAt);
   const { ref, fontSize } = useFitText<HTMLParagraphElement>(text, 80, 1280);
 
@@ -127,7 +142,9 @@ function StageMessageCard({ text, sentAt }: { text: string; sentAt: number }) {
           ref={ref}
           data-testid="stage-card-text"
           style={{ fontSize }}
-          className="w-full whitespace-normal break-words text-center font-inter font-extrabold uppercase leading-tight text-white"
+          className={`w-full whitespace-normal break-words text-center font-inter font-extrabold uppercase leading-tight text-white${
+            textClass ? ` ${textClass}` : ''
+          }`}
         >
           {text}
         </p>
@@ -142,6 +159,8 @@ function TimerDisplay() {
   const nowTime = useLiveClock(state.displayMode === 'clock');
   const hasStageMessage = state.stageMessage !== null && state.stageMessage.showOnTimer;
   const scale = useStageScale();
+  const appearance = state.appearance ?? DEFAULT_APPEARANCE;
+  const appClass = appearanceClass(appearance);
 
   useEffect(() => {
     setMounted(true);
@@ -155,7 +174,7 @@ function TimerDisplay() {
     ? secondsLeft <= 5
       ? 'text-red-500'
       : 'text-amber-400'
-    : 'text-white';
+    : '';
 
   const digitContent =
     state.displayMode === 'clock' ? (
@@ -164,6 +183,7 @@ function TimerDisplay() {
         text={nowTime}
         colorClass="text-emerald-400"
         fontSize={DIGIT_FONT_SIZE.clock}
+        textClass={appClass}
       />
     ) : mounted && isOvertime ? (
       showTimesUp ? (
@@ -173,6 +193,7 @@ function TimerDisplay() {
           colorClass="text-red-500"
           animClass={phase === 'timesup-exit' ? 'anim-timesup-out' : 'anim-timesup-in'}
           fontSize={DIGIT_FONT_SIZE.timesUp}
+          textClass={appClass}
         />
       ) : (
         <DigitText
@@ -181,6 +202,7 @@ function TimerDisplay() {
           colorClass="text-red-500"
           animClass="anim-swap-in"
           fontSize={DIGIT_FONT_SIZE.overtime}
+          textClass={appClass}
         />
       )
     ) : (
@@ -189,6 +211,8 @@ function TimerDisplay() {
         text={displayTime}
         colorClass={mainColor}
         fontSize={DIGIT_FONT_SIZE.countdown}
+        textClass={appClass}
+        color={critical ? undefined : appearance.fontColor}
       />
     );
 
@@ -198,16 +222,21 @@ function TimerDisplay() {
         className="timer-container relative flex items-center justify-center overflow-hidden bg-black"
         style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT, transform: `scale(${scale})` }}
       >
+        <StageBackground appearance={appearance} />
         <div
-          className={`transition-transform duration-500 ease-out ${
+          className={`relative z-10 transition-transform duration-500 ease-out ${
             hasStageMessage ? 'scale-[0.3] -translate-y-[324px]' : ''
           }`}
         >
           {digitContent}
         </div>
         {hasStageMessage && (
-          <div className="absolute inset-x-0 bottom-0 top-[454px] flex items-center justify-center p-6 md:p-10">
-            <StageMessageCard text={state.stageMessage!.text} sentAt={state.stageMessage!.sentAt} />
+          <div className="absolute inset-x-0 bottom-0 top-[454px] z-10 flex items-center justify-center p-6 md:p-10">
+            <StageMessageCard
+              text={state.stageMessage!.text}
+              sentAt={state.stageMessage!.sentAt}
+              textClass={appClass}
+            />
           </div>
         )}
       </div>

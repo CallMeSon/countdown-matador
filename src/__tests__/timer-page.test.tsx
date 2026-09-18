@@ -1,5 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_APPEARANCE } from '@/types/timer';
 
 type Store = typeof import('@/lib/timer-store');
 
@@ -148,6 +149,62 @@ describe('TimerPage', () => {
       expect(screen.getByTestId('stage-card').className).toContain('bg-red-700');
       expect(screen.getByTestId('stage-card-text').textContent).toBe('Halo panggung');
       vi.useRealTimers();
+    });
+  });
+
+  describe('appearance', () => {
+    it('background color diterapkan', () => {
+      store.timerStore.setAppearance({ bgMode: 'color', bgColor: '#123456' });
+      render(<TimerPage />);
+      expect(screen.getByTestId('stage-background').style.backgroundColor).toContain('18');
+    });
+
+    it('background image dirender saat mode image', () => {
+      store.timerStore.setAppearance({ bgMode: 'image', bgImage: '/backgrounds/grid-dark.svg' });
+      render(<TimerPage />);
+      expect(screen.getByTestId('stage-background-image').getAttribute('src')).toBe(
+        '/backgrounds/grid-dark.svg',
+      );
+    });
+
+    it('font & warna font kustom diterapkan ke digit countdown', () => {
+      store.timerStore.setAppearance({ fontFamily: 'oswald', fontColor: '#ff0000' });
+      render(<TimerPage />);
+      const digit = screen.getByTestId('countdown-main');
+      expect(digit.className).toContain('app-font-oswald');
+      expect(digit.style.color).toMatch(/255|#ff0000/i);
+    });
+
+    it('saat peringatan, warna font kustom tidak menang', async () => {
+      store.timerStore.setAppearance({ fontColor: '#ff0000' });
+      render(<TimerPage />);
+      act(() => {
+        store.timerStore.setDuration(5);
+        store.timerStore.start();
+      });
+      await act(async () => { await new Promise((r) => setTimeout(r, 100)); });
+      const digit = screen.getByTestId('countdown-main');
+      expect(digit.className).toContain('text-red-500');
+      expect(digit.style.color).toBe('');
+    });
+
+    it('digit jam tetap emerald walau fontColor diubah', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2024, 0, 1, 14, 22, 33));
+      store.timerStore.setAppearance({ fontColor: '#ff0000' });
+      store.timerStore.setDisplayMode('clock');
+      render(<TimerPage />);
+      expect(screen.getByTestId('clock-main').className).toContain('text-emerald-400');
+      vi.useRealTimers();
+    });
+
+    it('teks kartu pesan panggung tetap putih', () => {
+      store.timerStore.setAppearance({ fontFamily: 'teko', fontColor: '#ff0000' });
+      store.timerStore.sendStageMessage('Halo', true);
+      render(<TimerPage />);
+      const text = screen.getByTestId('stage-card-text');
+      expect(text.className).toContain('app-font-teko');
+      expect(text.className).toContain('text-white');
     });
   });
 });
