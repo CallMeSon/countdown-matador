@@ -11,11 +11,16 @@ const fs = require('fs');
 const path = require('path');
 const { parse: parseUrl } = require('url');
 const WebSocket = require('ws');
+const http = require('http');
+const { createUploadHandler, pruneUploads } = require('./upload-handler');
 
 const PORT = Number(process.env.PORT || 8081);
 const STATE_FILE = process.env.STATE_FILE || path.join(__dirname, 'state.json');
 const HEARTBEAT_MS = 30000;
 const PRUNE_MS = 7 * 24 * 60 * 60 * 1000; // 7 hari
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
+const UPLOAD_MAX_AGE_MS = Number(process.env.UPLOAD_MAX_AGE_DAYS || 30) * 24 * 60 * 60 * 1000;
+const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_BYTES || 8 * 1024 * 1024);
 
 const DEFAULT_STATE = {
   status: 'idle',
@@ -92,8 +97,37 @@ function getOrCreateRoom(roomId) {
   return room;
 }
 
-const wss = new WebSocket.Server({ port: PORT, host: '127.0.0.1' });
-console.log(`[timer-ws] listening on 127.0.0.1:${PORT}, state file: ${STATE_FILE}, rooms loaded: ${rooms.size}`);
+const handleUpload = createUploadHandler({ dir: UPLOAD_DIR, maxBytes: MAX_UPLOAD_BYTES });
+
+const server = http.createServer((req, res) => {
+  if (parseUrl(req.url, true).pathname === '/upload') {
+    handleUpload(req, res);
+    return;
+  }
+  res.writeHead(404, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: 'not found' }));
+});
+
+const wss = new WebSocket.Server({ server });
+
+server.listen(PORT, '127.0.0.1', () => {
+  const address = server.address();
+  const actualPort = address && typeof address === 'object' ? address.port : PORT;
+  console.log(
+    `[timer-ws] listening on 127.0.0.1:${actualPort}, state file: ${STATE_FILE}, uploads: ${UPLOAD_DIR}, rooms loaded: ${rooms.size}`,
+  );
+});
+
+const pruneTimer = setInterval(() => {
+  pruneUploads({ dir: UPLOAD_DIR, maxAgeMs: UPLOAD_MAX_AGE_MS })
+    .then((removed) => {
+      if (removed > 0) console.log(`[timer-ws] pruned ${removed} old upload(s)`);
+    })
+    .catch((err) => console.error('[timer-ws] prune failed:', err.message));
+}, 24 * 60 * 60 * 1000);
+pruneTimer.unref();
+
+pruneUploads({ dir: UPLOAD_DIR, maxAgeMs: UPLOAD_MAX_AGE_MS }).catch(() => {});
 
 function send(socket, msg) {
   if (socket.readyState === WebSocket.OPEN) {
@@ -186,6 +220,7 @@ wss.on('close', () => clearInterval(heartbeat));
 
 process.on('SIGTERM', () => {
   clearInterval(heartbeat);
+  clearInterval(pruneTimer);
   // wss.close() nunggu semua koneksi client kebuka nutup sendiri dulu baru
   // callback-nya jalan — kalau ada socket yang nggak nutup bersih (mati listrik
   // di sisi client, dst), ini bisa nggantung selamanya dan bikin restart/deploy
