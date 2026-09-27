@@ -38,6 +38,8 @@ const DEFAULT_STATE = {
     italic: false,
     fontColor: '#ffffff',
   },
+  layoutTimer: { offsets: {}, texts: [] },
+  layoutMatador: { offsets: {}, texts: [] },
 };
 
 /** rooms: Map<roomId, { state: TimerState, clients: Set<WebSocket>, updatedAt: number }> */
@@ -137,6 +139,32 @@ function send(socket, msg) {
   }
 }
 
+function normalizeLayout(raw) {
+  const out = { offsets: {}, texts: [] };
+  if (!raw || typeof raw !== 'object') return out;
+  if (raw.offsets && typeof raw.offsets === 'object') {
+    for (const [k, v] of Object.entries(raw.offsets)) {
+      const dx = Number(v && v.dx);
+      const dy = Number(v && v.dy);
+      out.offsets[k] = {
+        dx: !Number.isFinite(dx) ? 0 : Math.min(900, Math.max(-900, Math.round(dx))),
+        dy: !Number.isFinite(dy) ? 0 : Math.min(500, Math.max(-500, Math.round(dy))),
+      };
+    }
+  }
+  if (Array.isArray(raw.texts)) {
+    for (const t of raw.texts) {
+      if (out.texts.length >= 5) break;
+      if (!t || typeof t !== 'object' || typeof t.id !== 'string' || !/^[a-z0-9]{8}$/.test(t.id)) continue;
+      const text = typeof t.text === 'string' ? t.text.trim().slice(0, 120) : '';
+      if (!text) continue;
+      const cx = (v, lo, hi, fb) => { const n = Number(v); return !Number.isFinite(n) ? fb : Math.min(hi, Math.max(lo, Math.round(n))); };
+      out.texts.push({ id: t.id, text, x: cx(t.x, 0, 1920, 960), y: cx(t.y, 0, 1080, 540), size: cx(t.size, 24, 200, 64) });
+    }
+  }
+  return out;
+}
+
 wss.on('connection', (socket, req) => {
   const query = parseUrl(req.url, true).query;
   const roomId = typeof query.room === 'string' ? query.room.trim() : '';
@@ -178,6 +206,8 @@ wss.on('connection', (socket, req) => {
         ...DEFAULT_STATE,
         ...msg.state,
         appearance: { ...DEFAULT_STATE.appearance, ...(msg.state.appearance || baseAppearance) },
+        layoutTimer: normalizeLayout(msg.state.layoutTimer),
+        layoutMatador: normalizeLayout(msg.state.layoutMatador),
       };
       currentRoom.updatedAt = Date.now();
       persistRooms();

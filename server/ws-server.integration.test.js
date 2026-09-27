@@ -6,6 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawn } = require('node:child_process');
+const WebSocket = require('ws');
 
 const REPO_ROOT = path.join(__dirname, '..');
 
@@ -88,6 +89,30 @@ test('POST cross-origin mengembalikan header CORS', async () => {
     });
     assert.equal(res.status, 200);
     assert.equal(res.headers.get('access-control-allow-origin'), '*');
+  } finally {
+    child.kill();
+  }
+});
+
+test('STATE layout bertahan per-room dan diterima newcomer', async () => {
+  const { child, port } = await startServer();
+  try {
+    const ws1 = new WebSocket(`ws://127.0.0.1:${port}/ws?room=LAYOUT`);
+    await new Promise((res) => ws1.once('open', res));
+    const first = await new Promise((res) => ws1.once('message', (d) => res(JSON.parse(d.toString()))));
+    assert.equal(first.type, 'STATE');
+    assert.deepEqual(first.state.layoutTimer, { offsets: {}, texts: [] });
+    const layout = {
+      offsets: { digit: { dx: 100, dy: -50 } },
+      texts: [{ id: 'abcd1234', text: 'SESI 1', x: 960, y: 200, size: 64 }],
+    };
+    ws1.send(JSON.stringify({ type: 'STATE', state: { ...first.state, layoutTimer: layout } }));
+    await new Promise((r) => setTimeout(r, 300));
+    const ws2 = new WebSocket(`ws://127.0.0.1:${port}/ws?room=LAYOUT`);
+    const second = await new Promise((res) => ws2.once('message', (d) => res(JSON.parse(d.toString()))));
+    assert.deepEqual(second.state.layoutTimer, layout);
+    ws1.close();
+    ws2.close();
   } finally {
     child.kill();
   }
