@@ -97,11 +97,12 @@ Masing-masing membuka modal popup (`LayoutEditorModal`) untuk halaman itu:
    Update posisi di-throttle dengan `requestAnimationFrame` dan langsung
    memanggil `timerStore` → broadcast realtime ke display.
 3. **Seleksi**: klik/tap elemen → ring highlight + panel presisi:
-   - slider X (`dx` / `x`) dan Y (`dy` / `y`) angka;
-   - slider ukuran (hanya untuk teks custom).
-4. **Aksi teks**: `TAMBAH TEKS` (buat blok baru di tengah canvas dengan teks
-   default `TEKS BARU`, langsung terseleksi untuk diedit isinya),
-   `HAPUS` (hapus blok terpilih). Teks kosong / whitespace-only ditolak.
+   - offset bawaan: slider X (`dx`, −900..900) dan Y (`dy`, −500..500);
+   - teks custom: slider X (`x`, 0..1920), Y (`y`, 0..1080), ukuran (`size`, 24..200).
+4. **Aksi teks**: `TAMBAH TEKS` (blok baru di tengah stage `x:960, y:540,
+   size:64` dengan teks default `TEKS BARU`, langsung terseleksi untuk diedit
+   isinya), `HAPUS` (hapus blok terpilih). Input di-trim; teks kosong /
+   whitespace-only ditolak (tombol disabled).
 5. **RESET LAYOUT** — kembalikan layout halaman ini ke default + broadcast.
 6. Tidak ada tombol simpan; menutup modal = selesai. Modal mengunci scroll
    body selama terbuka.
@@ -190,8 +191,8 @@ Payload tetap kecil: 3 offset + max 5 blok pendek per halaman.
 - **Store** (`timer-store.test.ts` +): offset merge + broadcast; add/update/
   remove/reset custom text; no-op tanpa room; normalisasi state lama tanpa
   field layout.
-- **lib** (`layout.test.ts` baru): clamp offset, sanitize text (slice 120,
-  trim?), clamp x/y/size, cap 5 blok, id fallback.
+- **lib** (`layout.test.ts` baru): clamp offset, sanitize text (trim + slice 120,
+  tolak kosong), clamp x/y/size, cap 5 blok, id fallback.
 - **Control** (`control-page.test.tsx` + / file baru): tombol edit buka modal;
   drag (mock pointer events) memanggil store dengan stage px benar; tambah/
   hapus teks; reset memanggil `resetLayout`.
