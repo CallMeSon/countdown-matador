@@ -44,6 +44,26 @@ export interface StageMessage {
   showOnTimer: boolean; // ikut tampil di /timer, atau matador-only
 }
 
+export interface LayoutOffset {
+  dx: number; // px stage 1920x1080, clamp -900..900
+  dy: number; // px stage 1920x1080, clamp -500..500
+}
+
+export interface CustomTextBlock {
+  id: string;   // 8 char alnum
+  text: string; // max 120 char, sudah di-trim
+  x: number;    // px stage 0..1920
+  y: number;    // px stage 0..1080
+  size: number; // font-size px stage 24..200
+}
+
+export interface PageLayout {
+  offsets: Record<string, LayoutOffset>;
+  texts: CustomTextBlock[];
+}
+
+export const DEFAULT_PAGE_LAYOUT: PageLayout = { offsets: {}, texts: [] };
+
 export interface TimerState {
   status: TimerStatus;
   duration: number;            // total detik
@@ -52,6 +72,8 @@ export interface TimerState {
   displayMode: DisplayMode;    // 'timer' = countdown biasa, 'clock' = tampilkan jam saat ini
   stageMessage: StageMessage | null; // pesan ke layar panggung, null = tidak ada yang aktif
   appearance: AppearanceConfig; // tampilan display (background/font), tersinkron per-room
+  layoutTimer: PageLayout;   // layout halaman /timer
+  layoutMatador: PageLayout; // layout halaman /matador
 }
 
 export const DEFAULT_TIMER_STATE: TimerState = {
@@ -62,6 +84,8 @@ export const DEFAULT_TIMER_STATE: TimerState = {
   displayMode: 'timer',
   stageMessage: null,
   appearance: DEFAULT_APPEARANCE,
+  layoutTimer: DEFAULT_PAGE_LAYOUT,
+  layoutMatador: DEFAULT_PAGE_LAYOUT,
 };
 
 export const CHANNEL_NAME = 'matador-timer-sync';
