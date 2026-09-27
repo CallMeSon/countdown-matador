@@ -10,6 +10,7 @@ import { STAGE_HEIGHT, STAGE_WIDTH, useStageScale } from '@/hooks/useStageScale'
 import { timerStore } from '@/lib/timer-store';
 import { timesUpPhase } from '@/lib/timer-phase';
 import { StageBackground } from '@/components/StageBackground';
+import { LayoutOverlay } from '@/components/LayoutOverlay';
 import { appearanceClass } from '@/lib/appearance';
 import { DEFAULT_APPEARANCE } from '@/types/timer';
 
@@ -161,6 +162,7 @@ function TimerDisplay() {
   const scale = useStageScale();
   const appearance = state.appearance ?? DEFAULT_APPEARANCE;
   const appClass = appearanceClass(appearance);
+  const digitOffset = state.layoutTimer?.offsets.digit ?? { dx: 0, dy: 0 };
 
   useEffect(() => {
     setMounted(true);
@@ -223,12 +225,14 @@ function TimerDisplay() {
         className="timer-container relative z-10 flex items-center justify-center overflow-hidden"
         style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT, transform: `scale(${scale})` }}
       >
-        <div
-          className={`relative z-10 transition-transform duration-500 ease-out ${
-            hasStageMessage ? 'scale-[0.3] -translate-y-[324px]' : ''
-          }`}
-        >
-          {digitContent}
+        <div style={{ transform: `translate(${digitOffset.dx}px, ${digitOffset.dy}px)` }}>
+          <div
+            className={`relative z-10 transition-transform duration-500 ease-out ${
+              hasStageMessage ? 'scale-[0.3] -translate-y-[324px]' : ''
+            }`}
+          >
+            {digitContent}
+          </div>
         </div>
         {hasStageMessage && (
           <div className="absolute inset-x-0 bottom-0 top-[454px] z-10 flex items-center justify-center p-6 md:p-10">
@@ -239,6 +243,7 @@ function TimerDisplay() {
             />
           </div>
         )}
+        <LayoutOverlay texts={state.layoutTimer?.texts ?? []} appearance={appearance} />
       </div>
     </main>
   );

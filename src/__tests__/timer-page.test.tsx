@@ -236,4 +236,17 @@ describe('TimerPage', () => {
       expect(text.className).toContain('text-white');
     });
   });
+
+  it('offset digit diterapkan sebagai translate dan teks custom tampil', async () => {
+    window.history.pushState({}, '', '/timer?room=TEST');
+    const { default: TimerPage } = await import('@/app/timer/page');
+    const { timerStore } = await import('@/lib/timer-store');
+    timerStore.setRoom('TEST');
+    timerStore.setLayoutOffset('timer', 'digit', { dx: 100, dy: -50 });
+    timerStore.addCustomText('timer', 'SESI 1');
+    render(<TimerPage />);
+    const digit = screen.getByTestId('countdown-main').parentElement?.parentElement as HTMLElement;
+    expect(digit.style.transform).toBe('translate(100px, -50px)');
+    expect(screen.getByText('SESI 1').getAttribute('data-testid')).toMatch(/^custom-text-/);
+  });
 });
