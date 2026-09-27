@@ -10,6 +10,7 @@ import { timerStore } from '@/lib/timer-store';
 import { STAGE_HEIGHT, STAGE_WIDTH, useStageScale } from '@/hooks/useStageScale';
 import { DEFAULT_APPEARANCE, type StageMessage } from '@/types/timer';
 import { StageBackground } from '@/components/StageBackground';
+import { LayoutOverlay } from '@/components/LayoutOverlay';
 import { appearanceClass } from '@/lib/appearance';
 
 const TICKER_EXIT_MS = 400;
@@ -87,6 +88,9 @@ function MatadorDisplay() {
   const scale = useStageScale();
   const appearance = state.appearance ?? DEFAULT_APPEARANCE;
   const appClass = appearanceClass(appearance);
+  const layout = state.layoutMatador ?? { offsets: {}, texts: [] };
+  const off = (k: string) => layout.offsets?.[k] ?? { dx: 0, dy: 0 };
+  const t = (k: string) => `translate(${off(k).dx}px, ${off(k).dy}px)`;
 
   useEffect(() => {
     setMounted(true);
@@ -115,20 +119,22 @@ function MatadorDisplay() {
         {/* Bar atas: label kiri, badge overtime di tengah, timer kanan */}
         <header className="relative z-10 flex items-center gap-4 border-b border-zinc-800/60 px-6 py-2">
           {!tickerMounted && (
+            <div style={{ transform: t('label') }} className="shrink-0">
             <span
               data-testid="matador-label"
               style={{ color: appearance.fontColor }}
-              className={`shrink-0 whitespace-nowrap font-inter text-[clamp(1.25rem,4cqw,4.25rem)] font-black uppercase leading-none tracking-tight text-white${
+              className={`whitespace-nowrap font-inter text-[clamp(1.25rem,4cqw,4.25rem)] font-black uppercase leading-none tracking-tight text-white${
                 appClass ? ` ${appClass}` : ''
               }`}
             >
               {isClockMode ? 'CURRENT TIME' : 'COUNTDOWN TIMER'}
             </span>
+            </div>
           )}
 
           {/* Kolom tengah: ticker pesan panggung (prioritas, dapat lebar penuh
               waktu label disembunyikan) / badge overtime / kosong */}
-          <div className="flex min-w-0 flex-1 justify-center">
+          <div className="flex min-w-0 flex-1 justify-center" style={{ transform: t('ticker') }}>
             {tickerMounted && lastMessage ? (
               <div className={`w-full max-w-full overflow-hidden rounded-lg ${tickerExiting ? 'anim-timesup-out' : 'anim-badge-in'}`}>
                 {/* Class blink & entrance/exit dipisah 2 elemen — keduanya nyetel properti CSS
@@ -163,6 +169,7 @@ function MatadorDisplay() {
           </div>
 
           {isClockMode ? (
+            <div style={{ transform: t('clock') }} className="shrink-0">
             <span
               data-testid="matador-clock"
               className={`timer-digits shrink-0 font-anton text-[clamp(2.5rem,8cqw,7rem)] font-bold leading-none text-emerald-400${
@@ -171,19 +178,25 @@ function MatadorDisplay() {
             >
               {nowTime}
             </span>
+            </div>
           ) : mounted && isOvertime ? (
+            <div style={{ transform: t('clock') }} className="shrink-0">
             <span data-testid="matador-overtime" className={`anim-glow ${digitClass}`}>
               {overtimeTime}
             </span>
+            </div>
           ) : (
+            <div style={{ transform: t('clock') }} className="shrink-0">
             <span data-testid="matador-timer" style={timerColorStyle} className={digitClass}>
               {displayTime}
             </span>
+            </div>
           )}
         </header>
 
         {/* Space kosong untuk PPT */}
         <div data-testid="ppt-space" className="relative z-10 flex-1" aria-label="ruang presentasi" />
+        <LayoutOverlay texts={layout.texts ?? []} appearance={appearance} />
       </div>
     </main>
   );

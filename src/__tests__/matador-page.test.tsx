@@ -241,4 +241,17 @@ describe('MatadorPage', () => {
       vi.useRealTimers();
     });
   });
+
+  it('offset matador diterapkan dan teks custom tampil', async () => {
+    window.history.pushState({}, '', '/matador?room=TEST');
+    const { default: MatadorPage } = await import('@/app/matador/page');
+    const { timerStore } = await import('@/lib/timer-store');
+    timerStore.setRoom('TEST');
+    timerStore.setLayoutOffset('matador', 'clock', { dx: -80, dy: 40 });
+    timerStore.addCustomText('matador', 'KEYNOTE');
+    render(<MatadorPage />);
+    const clock = screen.getByTestId('matador-timer');
+    expect((clock.parentElement as HTMLElement).style.transform).toBe('translate(-80px, 40px)');
+    expect(screen.getByText('KEYNOTE').getAttribute('data-testid')).toMatch(/^custom-text-/);
+  });
 });
