@@ -473,4 +473,15 @@ describe('ControlPage', () => {
       expect(store.timerStore.getState().appearance.bgImage).toBe(before);
     });
   });
+
+  it('section LAYOUT membuka modal editor per halaman', async () => {
+    render(<ControlPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'EDIT LAYOUT TIMER' }));
+    expect(screen.getByTestId('layout-canvas')).toBeTruthy();
+    expect(screen.getByTestId('layout-box-digit')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'TUTUP' }));
+    expect(screen.queryByTestId('layout-canvas')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'EDIT LAYOUT MATADOR' }));
+    expect(screen.getByTestId('layout-box-clock')).toBeTruthy();
+  });
 });

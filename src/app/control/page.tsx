@@ -12,6 +12,7 @@ import { uploadImage } from '@/lib/upload';
 import { DEFAULT_APPEARANCE, PRESET_DURATIONS } from '@/types/timer';
 import { NavLinkMenu } from '@/components/NavLinkMenu';
 import { StageBackground } from '@/components/StageBackground';
+import { LayoutEditorModal } from '@/components/LayoutEditorModal';
 
 const PRESET_LABELS: Record<number, string> = {
   60: '1 MENIT',
@@ -146,6 +147,7 @@ function ControlBody({ room }: { room: string }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [layoutEditor, setLayoutEditor] = useState<'timer' | 'matador' | null>(null);
 
   const handleUpload = async (file: File | undefined) => {
     if (!file) return;
@@ -672,6 +674,29 @@ function ControlBody({ room }: { room: string }) {
             </button>
           </div>
         </section>
+
+        {/* Layout display */}
+        <section>
+          <h2 className="mb-3 text-xs font-semibold tracking-widest text-zinc-400">LAYOUT</h2>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setLayoutEditor('timer')}
+              className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 font-semibold tracking-wider transition-all active:scale-95 hover:border-zinc-600"
+            >
+              EDIT LAYOUT TIMER
+            </button>
+            <button
+              onClick={() => setLayoutEditor('matador')}
+              className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 font-semibold tracking-wider transition-all active:scale-95 hover:border-zinc-600"
+            >
+              EDIT LAYOUT MATADOR
+            </button>
+          </div>
+        </section>
+
+        {layoutEditor && (
+          <LayoutEditorModal page={layoutEditor} onClose={() => setLayoutEditor(null)} />
+        )}
 
         {/* Navigasi halaman */}
         <section className="flex gap-3">
