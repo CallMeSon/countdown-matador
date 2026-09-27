@@ -276,4 +276,42 @@ describe('timerStore', () => {
       expect(tabB.timerStore.getState().appearance.bgColor).toBe('#00ff00');
     });
   });
+
+  describe('timerStore layout', () => {
+    it('setLayoutOffset menyimpan offset per halaman + broadcast', () => {
+      store.timerStore.setLayoutOffset('matador', 'clock', { dx: 100, dy: -50 });
+      expect(store.timerStore.getState().layoutMatador.offsets.clock).toEqual({ dx: 100, dy: -50 });
+      expect(store.timerStore.getState().layoutTimer.offsets).toEqual({});
+    });
+
+    it('add/update/remove custom text', () => {
+      const id = store.timerStore.addCustomText('timer', '  SESI 1  ');
+      expect(id).toMatch(/^[a-z0-9]{8}$/);
+      expect(store.timerStore.getState().layoutTimer.texts[0]).toMatchObject({ text: 'SESI 1' });
+      store.timerStore.updateCustomText('timer', id as string, { x: 100, size: 80 });
+      expect(store.timerStore.getState().layoutTimer.texts[0]).toMatchObject({ x: 100, size: 80 });
+      store.timerStore.removeCustomText('timer', id as string);
+      expect(store.timerStore.getState().layoutTimer.texts).toEqual([]);
+    });
+
+    it('teks kosong ditolak dan max 5 blok', () => {
+      expect(store.timerStore.addCustomText('timer', '   ')).toBeNull();
+      for (let i = 0; i < 6; i++) store.timerStore.addCustomText('timer', `T${i}`);
+      expect(store.timerStore.getState().layoutTimer.texts).toHaveLength(5);
+    });
+
+    it('resetLayout mengembalikan default halaman itu saja', () => {
+      store.timerStore.setLayoutOffset('timer', 'digit', { dx: 50, dy: 50 });
+      store.timerStore.setLayoutOffset('matador', 'clock', { dx: 50, dy: 50 });
+      store.timerStore.resetLayout('timer');
+      expect(store.timerStore.getState().layoutTimer).toEqual({ offsets: {}, texts: [] });
+      expect(store.timerStore.getState().layoutMatador.offsets.clock).toEqual({ dx: 50, dy: 50 });
+    });
+
+    it('tanpa room semua method no-op', () => {
+      (store.timerStore as unknown as { room: null }).room = null;
+      store.timerStore.setLayoutOffset('timer', 'digit', { dx: 9, dy: 9 });
+      expect(store.timerStore.addCustomText('timer', 'X')).toBeNull();
+    });
+  });
 });

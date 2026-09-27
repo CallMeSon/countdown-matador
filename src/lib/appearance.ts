@@ -5,6 +5,7 @@ import {
   FontKey,
   TimerState,
 } from '@/types/timer';
+import { normalizePageLayout } from './layout';
 
 export interface FontOption {
   key: FontKey;
@@ -70,5 +71,7 @@ export function mergeIncomingState(state: Partial<TimerState>): TimerState {
       ...appearance,
       bgImage: sanitizeImageUrl(typeof appearance.bgImage === 'string' ? appearance.bgImage : ''),
     },
+    layoutTimer: normalizePageLayout(state.layoutTimer),
+    layoutMatador: normalizePageLayout(state.layoutMatador),
   };
 }

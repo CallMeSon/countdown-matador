@@ -2,6 +2,9 @@
 
 import { TimerState, DEFAULT_TIMER_STATE } from '@/types/timer';
 import { mergeIncomingState, sanitizeImageUrl } from '@/lib/appearance';
+import { generateBlockId, normalizeOffset, LAYOUT_LIMITS } from '@/lib/layout';
+
+export type LayoutPage = 'timer' | 'matador';
 
 type Message =
   | { type: 'STATE'; state: TimerState }
@@ -220,6 +223,71 @@ class TimerStore {
     if (!this.room) return;
     if (this.state.stageMessage === null) return;
     this.setState({ ...this.state, stageMessage: null }, true);
+  }
+
+  private layoutKey(page: LayoutPage): 'layoutTimer' | 'layoutMatador' {
+    return page === 'timer' ? 'layoutTimer' : 'layoutMatador';
+  }
+
+  setLayoutOffset(page: LayoutPage, key: string, offset: { dx: number; dy: number }): void {
+    if (!this.room) return;
+    const k = this.layoutKey(page);
+    const normalized = normalizeOffset(offset);
+    this.setState(
+      { ...this.state, [k]: { ...this.state[k], offsets: { ...this.state[k].offsets, [key]: normalized } } },
+      true,
+    );
+  }
+
+  addCustomText(page: LayoutPage, text: string): string | null {
+    if (!this.room) return null;
+    const k = this.layoutKey(page);
+    if (this.state[k].texts.length >= LAYOUT_LIMITS.BLOCKS_MAX) return null;
+    const trimmed = text.trim().slice(0, LAYOUT_LIMITS.TEXT_MAX);
+    if (!trimmed) return null;
+    const id = generateBlockId();
+    const block = { id, text: trimmed, x: 960, y: 540, size: 64 };
+    this.setState({ ...this.state, [k]: { ...this.state[k], texts: [...this.state[k].texts, block] } }, true);
+    return id;
+  }
+
+  updateCustomText(page: LayoutPage, id: string, patch: { text?: string; x?: number; y?: number; size?: number }): void {
+    if (!this.room) return;
+    const k = this.layoutKey(page);
+    const clampInt = (v: number, min: number, max: number): number =>
+      Math.min(max, Math.max(min, Math.round(v)));
+    const texts = this.state[k].texts.map((b) => {
+      if (b.id !== id) return b;
+      const next = { ...b };
+      if (patch.text !== undefined) {
+        const trimmed = patch.text.trim().slice(0, LAYOUT_LIMITS.TEXT_MAX);
+        if (trimmed) next.text = trimmed;
+      }
+      if (patch.x !== undefined && Number.isFinite(patch.x)) {
+        next.x = clampInt(patch.x, LAYOUT_LIMITS.X_MIN, LAYOUT_LIMITS.X_MAX);
+      }
+      if (patch.y !== undefined && Number.isFinite(patch.y)) {
+        next.y = clampInt(patch.y, LAYOUT_LIMITS.Y_MIN, LAYOUT_LIMITS.Y_MAX);
+      }
+      if (patch.size !== undefined && Number.isFinite(patch.size)) {
+        next.size = clampInt(patch.size, LAYOUT_LIMITS.SIZE_MIN, LAYOUT_LIMITS.SIZE_MAX);
+      }
+      return next;
+    });
+    this.setState({ ...this.state, [k]: { ...this.state[k], texts } }, true);
+  }
+
+  removeCustomText(page: LayoutPage, id: string): void {
+    if (!this.room) return;
+    const k = this.layoutKey(page);
+    const texts = this.state[k].texts.filter((b) => b.id !== id);
+    this.setState({ ...this.state, [k]: { ...this.state[k], texts } }, true);
+  }
+
+  resetLayout(page: LayoutPage): void {
+    if (!this.room) return;
+    const k = this.layoutKey(page);
+    this.setState({ ...this.state, [k]: { offsets: {}, texts: [] } }, true);
   }
 
   computeRemaining(state: TimerState, now: number): number {

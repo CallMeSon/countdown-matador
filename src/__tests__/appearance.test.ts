@@ -119,3 +119,23 @@ describe('FONT_OPTIONS / GALLERY_BACKGROUNDS', () => {
     expect(GALLERY_BACKGROUNDS.every((p) => p.startsWith('/backgrounds/'))).toBe(true);
   });
 });
+
+describe('mergeIncomingState layout', () => {
+  it('mengisi layout yang hilang dari state lama', () => {
+    const merged = mergeIncomingState({ ...DEFAULT_TIMER_STATE, layoutTimer: undefined, layoutMatador: undefined });
+    expect(merged.layoutTimer).toEqual({ offsets: {}, texts: [] });
+    expect(merged.layoutMatador).toEqual({ offsets: {}, texts: [] });
+  });
+
+  it('menormalisasi offset dan cap teks berlebih', () => {
+    const merged = mergeIncomingState({
+      ...DEFAULT_TIMER_STATE,
+      layoutTimer: {
+        offsets: { digit: { dx: 5000, dy: 0 } },
+        texts: Array.from({ length: 7 }, (_, i) => ({ id: `id00000${i}`, text: 'X', x: 0, y: 0, size: 64 })),
+      },
+    });
+    expect(merged.layoutTimer.offsets.digit).toEqual({ dx: 900, dy: 0 });
+    expect(merged.layoutTimer.texts).toHaveLength(5);
+  });
+});
