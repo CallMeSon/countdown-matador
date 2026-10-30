@@ -2,7 +2,8 @@
 const isDev = process.env.NODE_ENV !== 'production';
 
 const nextConfig = {
-  output: 'export',
+  // Static export hanya untuk build produksi; `next dev` butuh rewrites di bawah.
+  ...(isDev ? {} : { output: 'export' }),
   images: {
     unoptimized: true,
   },
