@@ -45,14 +45,23 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .btn { transition-property: background-color, border-color, color, opacity, transform; transition-duration: var(--t-hover), var(--t-hover), var(--t-hover), var(--t-hover), var(--t-press); }
-  .btn:active:not(:disabled) { transform: scale(0.97); }
+  /* Semua elemen yang bisa diklik: hover angkat 2px, tekan turun + mengecil.
+     Hanya perangkat dengan hover; segmented ikut indikatornya, jadi tidak diangkat. */
+  :is(button, a[href], [role='button'], [role='switch'], summary) {
+    transition-property: background-color, border-color, color, opacity, transform;
+    transition-duration: var(--t-hover), var(--t-hover), var(--t-hover), var(--t-hover), var(--t-press);
+    transition-timing-function: ease, ease, ease, ease, var(--ease-out);
+  }
+  @media (hover: hover) {
+    :is(button, a[href], [role='button'], [role='switch'], summary):hover:not(:disabled, [aria-disabled='true'], [role='radio']) { transform: translateY(-2px); }
+  }
+  :is(button, a[href], [role='button'], [role='switch'], summary):active:not(:disabled, [aria-disabled='true']) { transform: translateY(0) scale(0.97); }
   .m-menu-in { animation-name: m-menu-in; animation-timing-function: var(--ease-out); }
   .m-handle-in { animation-name: m-pop-in; animation-timing-function: var(--ease-out); }
   .m-toolbar-in { animation-name: m-rise-in; animation-timing-function: var(--ease-out); }
   .m-add-in { animation-name: m-scale-in; animation-timing-function: var(--ease-out); }
   .m-ping { animation-name: m-ping; animation-timing-function: var(--ease-out); }
-  .theme-switch { transition: background-color 300ms ease; }
+  .theme-switch { transition: background-color 300ms ease, transform var(--t-press) var(--ease-out); }
   .theme-switch-knob { transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1), background-color 200ms ease; }
   .theme-switch-icon { transition: color 250ms ease; }
 }

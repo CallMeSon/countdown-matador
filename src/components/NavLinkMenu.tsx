@@ -53,7 +53,7 @@ export function NavLinkMenu({
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="min-h-[44px] w-full rounded-control border border-line bg-control px-4 py-2 font-medium text-fg transition-transform active:scale-95 hover:bg-fg/5"
+        className="btn min-h-[44px] w-full rounded-control border border-line bg-control px-4 py-2 font-medium text-fg hover:bg-fg/5"
       >
         <span className="inline-flex items-center justify-center gap-1.5">
           {label}

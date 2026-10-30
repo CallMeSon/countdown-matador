@@ -44,7 +44,7 @@ export function BackgroundPanel() {
         timerStore.setAppearance({ bgMode: mode });
       }}
       aria-pressed={appearance.bgMode === mode}
-      className={`min-h-12 flex-1 rounded-control border px-4 py-3 font-medium tracking-wide transition-all active:scale-95 ${
+      className={`btn min-h-12 flex-1 rounded-control border px-4 py-3 font-medium tracking-wide ${
         appearance.bgMode === mode
           ? 'border-accent bg-accent/10 text-accent'
           : 'border-line bg-control text-fg hover:border-fg/30'

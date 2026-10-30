@@ -27,7 +27,7 @@ export function ThemeSwitch({ className = '' }: { className?: string }) {
       aria-checked={dark}
       aria-label="Mode gelap"
       onClick={toggle}
-      className={`theme-switch relative h-[34px] w-[68px] shrink-0 rounded-full bg-ink ${className}`}
+      className={`theme-switch relative before:absolute before:-inset-[5px] before:content-[''] h-[34px] w-[68px] shrink-0 rounded-full bg-ink ${className}`}
     >
       <span
         aria-hidden="true"

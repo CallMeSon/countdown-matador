@@ -30,6 +30,7 @@ export function Disclosure({
       <div
         id={panelId}
         aria-hidden={!open}
+        {...(open ? {} : ({ inert: '' } as object))}
         className="m-disclosure grid"
         style={{ gridTemplateRows: open ? '1fr' : '0fr', opacity: open ? 1 : 0 }}
       >

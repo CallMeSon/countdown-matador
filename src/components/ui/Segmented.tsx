@@ -46,7 +46,7 @@ export function Segmented<T extends string>({ value, options, onChange, ariaLabe
             tabIndex={active ? 0 : -1}
             onClick={() => onChange(o.value)}
             onKeyDown={(e) => onKeyDown(e, i)}
-            className={`btn relative min-h-[40px] rounded-full px-4 text-sm font-medium ${
+            className={`btn relative min-h-[44px] rounded-full px-4 text-sm font-medium ${
               active ? 'text-ink' : 'text-faint'
             }`}
           >

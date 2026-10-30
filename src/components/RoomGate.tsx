@@ -63,7 +63,7 @@ export function RoomGate({
         {lastUsedRoom && (
           <button
             onClick={() => onSubmit(lastUsedRoom)}
-            className="min-h-11 w-full rounded-control px-4 py-2 text-sm text-sub hover:text-fg"
+            className="btn min-h-11 w-full rounded-control px-4 py-2 text-sm text-sub hover:text-fg"
           >
             Lanjutkan room terakhir: {lastUsedRoom} →
           </button>

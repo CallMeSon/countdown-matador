@@ -262,7 +262,7 @@ function ControlBody({ room }: { room: string }) {
                         key={d}
                         onClick={() => timerStore.setDuration(d)}
                         aria-pressed={state.duration === d}
-                        className={`min-h-11 rounded-control border px-3 py-2 font-medium transition-all active:scale-95 ${
+                        className={`btn min-h-11 rounded-control border px-3 py-2 font-medium ${
                           state.duration === d
                             ? 'border-transparent bg-highlight text-ink'
                             : 'border-line bg-control text-fg hover:border-fg/30'

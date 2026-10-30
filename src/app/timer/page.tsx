@@ -54,7 +54,7 @@ function RoomEntryGate({ onSubmit }: { onSubmit: (code: string) => void }) {
         />
         <button
           type="submit"
-          className="w-full rounded-control bg-accent px-6 py-3 font-bold tracking-widest text-on-accent hover:bg-accent-hover"
+          className="btn w-full rounded-control bg-accent px-6 py-3 font-bold tracking-widest text-on-accent hover:bg-accent-hover"
         >
           TAMPILKAN
         </button>

@@ -23,7 +23,7 @@ export function RoomInfo({ room }: { room: string }) {
         <span className="hidden sm:inline">Room </span>
         {room}
       </span>
-      <Button variant="accent" onClick={copy} aria-label="Salin kode room" className="!min-h-[36px] !px-2.5 text-sm sm:!px-3">
+      <Button variant="accent" onClick={copy} aria-label="Salin kode room" className="!px-2.5 text-sm sm:!px-3">
         <span key={String(copied)} className="m-fade-in flex items-center gap-1.5">
           {copied ? <Check size={16} aria-hidden="true" className="sm:hidden" /> : <Copy size={16} aria-hidden="true" className="sm:hidden" />}
           <span className="sr-only sm:not-sr-only">{copied ? 'Tersalin!' : 'Salin kode'}</span>

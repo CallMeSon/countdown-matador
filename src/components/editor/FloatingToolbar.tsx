@@ -14,7 +14,7 @@ type Editor = ReturnType<typeof useLayoutEditor>;
 
 const STEP = 8;
 const btn =
-  'flex h-9 w-9 items-center justify-center rounded-control text-white hover:bg-white/15 aria-pressed:bg-white/25';
+  'btn flex h-9 w-9 items-center justify-center rounded-control text-white hover:bg-white/15 aria-pressed:bg-white/25';
 
 /** Toolbar mengambang di atas teks terpilih; ukurannya dikompensasi scale agar konstan di layar. */
 export function FloatingToolbar({

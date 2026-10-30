@@ -13,16 +13,16 @@ Tema: `melius` dari file Pencil (tema aktif yang tampil di desain). Nilai ada di
 | `input` | `#FFFFFF` | `#1A1616` | Isi input, select, textarea |
 | `control` | `#FAFAFA` | `#1A1616` | Isi tombol ghost |
 | `fg` | `#0E0E0E` | `#FAFAFA` | Teks utama |
-| `sub` | `#676767` | `#9C9996` | Teks sekunder dan label |
+| `sub` | `#595959` | `#9C9996` | Teks sekunder dan label |
 | `line` | hitam 8% | putih 8% | Garis tipis |
 | `well` | `#D9D9D9` | `#100E0D` | Area kanvas editor |
 | `nav` | `#1A1616` | `#1A1616` | Nav bar (selalu gelap) |
-| `accent` / `accent-hover` | `#F04E23` / `#D9420F` | sama | Aksi utama, fokus, seleksi |
+| `accent` / `accent-hover` | `#C73E14` / `#A5320C` | sama | Aksi utama, fokus, seleksi |
 | `highlight` | `#FFF78B` | sama | PAUSE, chip room, pesan aktif |
 | `on-accent` | `#FAFAFA` | sama | Teks di atas aksen |
 | `danger` | `#E5484D` | sama | Error, hapus |
 
-Catatan kontras: `on-accent` (`#FAFAFA`) di atas `accent` (`#F04E23`) sekitar 3.6:1, cukup untuk teks tombol 17px berat 500 tetapi bukan untuk teks kecil. Merah overtime di stage tetap `red-*` Tailwind karena bagian dari tayangan.
+Catatan kontras: `on-accent` (`#FAFAFA`) di atas `accent` (`#C73E14`) sekitar 4.9:1, memenuhi AA untuk teks tombol. Merah overtime di stage tetap `red-*` Tailwind karena bagian dari tayangan.
 
 ## Tipografi
 
