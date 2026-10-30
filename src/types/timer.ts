@@ -44,9 +44,16 @@ export interface StageMessage {
   showOnTimer: boolean; // ikut tampil di /timer, atau matador-only
 }
 
-export interface LayoutOffset {
-  dx: number; // px stage 1920x1080, clamp -900..900
-  dy: number; // px stage 1920x1080, clamp -500..500
+// Tampilan per elemen bawaan (digit/label/ticker/clock). Posisinya tetap; yang bisa diubah hanya
+// gaya. Field yang tidak ada = ikut pengaturan bawaan/global (appearance).
+export interface ElementStyle {
+  font?: FontKey;
+  bold?: boolean;
+  italic?: boolean;
+  color?: string;   // '#rrggbb'
+  spacing?: number; // letter-spacing px stage, -10..40
+  size?: number;    // persen dari ukuran bawaan, 50..150; tidak ada = 100
+  hidden?: boolean;
 }
 
 export interface CustomTextBlock {
@@ -55,14 +62,23 @@ export interface CustomTextBlock {
   x: number;    // px stage 0..1920
   y: number;    // px stage 0..1080
   size: number; // font-size px stage 24..200
+  // Opsional — bila tidak ada: font global, bold true, italic false, align center,
+  // color = appearance.fontColor, spacing 0, hidden false.
+  font?: FontKey;
+  bold?: boolean;
+  italic?: boolean;
+  align?: 'left' | 'center' | 'right';
+  color?: string;    // '#RRGGBB'
+  spacing?: number;  // letter-spacing px stage, -10..40
+  hidden?: boolean;
 }
 
 export interface PageLayout {
-  offsets: Record<string, LayoutOffset>;
+  styles: Record<string, ElementStyle>;
   texts: CustomTextBlock[];
 }
 
-export const DEFAULT_PAGE_LAYOUT: PageLayout = { offsets: {}, texts: [] };
+export const DEFAULT_PAGE_LAYOUT: PageLayout = { styles: {}, texts: [] };
 
 export interface TimerState {
   status: TimerStatus;

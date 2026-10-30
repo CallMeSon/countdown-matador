@@ -101,9 +101,9 @@ test('STATE layout bertahan per-room dan diterima newcomer', async () => {
     await new Promise((res) => ws1.once('open', res));
     const first = await new Promise((res) => ws1.once('message', (d) => res(JSON.parse(d.toString()))));
     assert.equal(first.type, 'STATE');
-    assert.deepEqual(first.state.layoutTimer, { offsets: {}, texts: [] });
+    assert.deepEqual(first.state.layoutTimer, { styles: {}, texts: [] });
     const layout = {
-      offsets: { digit: { dx: 100, dy: -50 } },
+      styles: { digit: { color: '#ff0000', size: 120, hidden: true } },
       texts: [{ id: 'abcd1234', text: 'SESI 1', x: 960, y: 200, size: 64 }],
     };
     ws1.send(JSON.stringify({ type: 'STATE', state: { ...first.state, layoutTimer: layout } }));

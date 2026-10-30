@@ -1,7 +1,5 @@
-import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_APPEARANCE } from '@/types/timer';
-import { GALLERY_BACKGROUNDS } from '@/lib/appearance';
 
 type Store = typeof import('@/lib/timer-store');
 type ControlPageType = typeof import('@/app/control/page').default;
@@ -45,7 +43,7 @@ describe('ControlPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '10 MENIT' }));
     expect(store.timerStore.getState().duration).toBe(600);
     expect(store.timerStore.getState().status).toBe('idle');
-    expect(screen.getByTestId('preview-time').textContent).toBe('10:00');
+    expect(screen.getByTestId('countdown-main').textContent).toBe('10:00');
   });
 
   it('menit 10 detik 00 → setDuration(600)', () => {
@@ -145,7 +143,7 @@ describe('ControlPage', () => {
     });
   });
 
-  describe('mode durasi (dropdown)', () => {
+  describe('mode durasi (segmented)', () => {
     it('default TIMER BIASA: preset & MM:SS terlihat, KE JAM tersembunyi', () => {
       render(<ControlPage />);
       expect(screen.getByRole('button', { name: '5 MENIT' })).toBeTruthy();
@@ -154,7 +152,7 @@ describe('ControlPage', () => {
 
     it('pilih TIMER KE JAM: preset & MM:SS hilang, KE JAM muncul', () => {
       render(<ControlPage />);
-      fireEvent.change(screen.getByLabelText('MODE DURASI'), { target: { value: 'target' } });
+      fireEvent.click(screen.getByRole('radio', { name: 'Timer ke jam' }));
       expect(screen.queryByRole('button', { name: '5 MENIT' })).toBeNull();
       expect(screen.getByTestId('target-hour')).toBeTruthy();
       expect(screen.getByRole('button', { name: 'MULAI KE JAM' })).toBeTruthy();
@@ -164,7 +162,7 @@ describe('ControlPage', () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date(2024, 0, 1, 9, 30, 5));
       render(<ControlPage />);
-      fireEvent.change(screen.getByLabelText('MODE DURASI'), { target: { value: 'now' } });
+      fireEvent.click(screen.getByRole('radio', { name: 'Jam saat ini' }));
 
       expect(screen.getByTestId('current-time').textContent).toBe('09:30:05');
       expect(screen.queryByRole('button', { name: '5 MENIT' })).toBeNull();
@@ -178,27 +176,38 @@ describe('ControlPage', () => {
       vi.useRealTimers();
     });
 
+    it('mode JAM SAAT INI: preview menampilkan jam dan layar berpindah ke jam setelah START', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2024, 0, 1, 9, 30, 5));
+      render(<ControlPage />);
+      fireEvent.click(screen.getByRole('radio', { name: 'Jam saat ini' }));
+      expect(screen.getByTestId('clock-main').textContent).toBe('09:30:05');
+      expect(store.timerStore.getState().displayMode).toBe('timer');
+      fireEvent.click(screen.getByRole('button', { name: 'START' }));
+      expect(store.timerStore.getState().displayMode).toBe('clock');
+      vi.useRealTimers();
+    });
+
     it('pilih JAM SAAT INI: dropdown saja belum menyiarkan apa-apa', () => {
       render(<ControlPage />);
-      fireEvent.change(screen.getByLabelText('MODE DURASI'), { target: { value: 'now' } });
+      fireEvent.click(screen.getByRole('radio', { name: 'Jam saat ini' }));
       expect(store.timerStore.getState().displayMode).toBe('timer');
     });
 
     it('mode JAM SAAT INI: klik START yang trigger displayMode=clock ke semua layout', () => {
       render(<ControlPage />);
-      fireEvent.change(screen.getByLabelText('MODE DURASI'), { target: { value: 'now' } });
+      fireEvent.click(screen.getByRole('radio', { name: 'Jam saat ini' }));
       fireEvent.click(screen.getByRole('button', { name: 'START' }));
       expect(store.timerStore.getState().displayMode).toBe('clock');
     });
 
     it('balik ke TIMER BIASA lalu START: displayMode balik ke timer', () => {
       render(<ControlPage />);
-      const select = screen.getByLabelText('MODE DURASI');
-      fireEvent.change(select, { target: { value: 'now' } });
+      fireEvent.click(screen.getByRole('radio', { name: 'Jam saat ini' }));
       fireEvent.click(screen.getByRole('button', { name: 'START' }));
       expect(store.timerStore.getState().displayMode).toBe('clock');
 
-      fireEvent.change(select, { target: { value: 'normal' } });
+      fireEvent.click(screen.getByRole('radio', { name: 'Timer biasa' }));
       fireEvent.click(screen.getByRole('button', { name: 'START' }));
       expect(store.timerStore.getState().displayMode).toBe('timer');
     });
@@ -208,12 +217,11 @@ describe('ControlPage', () => {
       vi.useFakeTimers();
       vi.setSystemTime(fixedNow);
       render(<ControlPage />);
-      const select = screen.getByLabelText('MODE DURASI');
-      fireEvent.change(select, { target: { value: 'now' } });
+      fireEvent.click(screen.getByRole('radio', { name: 'Jam saat ini' }));
       fireEvent.click(screen.getByRole('button', { name: 'START' }));
       expect(store.timerStore.getState().displayMode).toBe('clock');
 
-      fireEvent.change(select, { target: { value: 'target' } });
+      fireEvent.click(screen.getByRole('radio', { name: 'Timer ke jam' }));
       fireEvent.change(screen.getByTestId('target-hour'), { target: { value: '10' } });
       fireEvent.change(screen.getByTestId('target-minute'), { target: { value: '05' } });
       fireEvent.click(screen.getByRole('button', { name: 'MULAI KE JAM' }));
@@ -223,12 +231,11 @@ describe('ControlPage', () => {
 
     it('RESET juga bisa jadi trigger ganti mode (bukan cuma START)', () => {
       render(<ControlPage />);
-      const select = screen.getByLabelText('MODE DURASI');
-      fireEvent.change(select, { target: { value: 'now' } });
+      fireEvent.click(screen.getByRole('radio', { name: 'Jam saat ini' }));
       fireEvent.click(screen.getByRole('button', { name: 'RESET' }));
       expect(store.timerStore.getState().displayMode).toBe('clock');
 
-      fireEvent.change(select, { target: { value: 'normal' } });
+      fireEvent.click(screen.getByRole('radio', { name: 'Timer biasa' }));
       fireEvent.click(screen.getByRole('button', { name: 'RESET' }));
       expect(store.timerStore.getState().displayMode).toBe('timer');
     });
@@ -240,7 +247,7 @@ describe('ControlPage', () => {
       expect(store.timerStore.getState().displayMode).toBe('timer');
 
       // ganti dropdown ke JAM SAAT INI saat timer masih jalan — belum boleh berubah
-      fireEvent.change(screen.getByLabelText('MODE DURASI'), { target: { value: 'now' } });
+      fireEvent.click(screen.getByRole('radio', { name: 'Jam saat ini' }));
       expect(store.timerStore.getState().displayMode).toBe('timer');
       expect(store.timerStore.getState().status).toBe('running');
 
@@ -253,22 +260,22 @@ describe('ControlPage', () => {
   describe('nav popover (TIMER/MATADOR)', () => {
     it('klik TIMER menampilkan menu Buka Tab Baru / Salin Link', () => {
       render(<ControlPage />);
-      fireEvent.click(screen.getByRole('button', { name: 'TIMER' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Timer' }));
       expect(screen.getByRole('button', { name: 'Buka Tab Baru' })).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Salin Link' })).toBeTruthy();
     });
 
-    it('klik "Buka Tab Baru" memanggil window.open dengan path yang benar dan menutup menu', () => {
+    it('klik "Buka Tab Baru" memanggil window.open dengan path yang benar dan menutup menu', async () => {
       render(<ControlPage />);
-      fireEvent.click(screen.getByRole('button', { name: 'MATADOR' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Matador' }));
       fireEvent.click(screen.getByRole('button', { name: 'Buka Tab Baru' }));
       expect(window.open).toHaveBeenCalledWith('/matador?room=TEST', '_blank', 'noopener,noreferrer');
-      expect(screen.queryByRole('button', { name: 'Buka Tab Baru' })).toBeNull();
+      await waitFor(() => expect(screen.queryByRole('button', { name: 'Buka Tab Baru' })).toBeNull());
     });
 
     it('klik "Salin Link" memanggil clipboard.writeText dengan URL penuh', async () => {
       render(<ControlPage />);
-      fireEvent.click(screen.getByRole('button', { name: 'TIMER' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Timer' }));
       fireEvent.click(screen.getByRole('button', { name: 'Salin Link' }));
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
         `${window.location.origin}/timer?room=TEST`,
@@ -276,12 +283,12 @@ describe('ControlPage', () => {
       expect(await screen.findByRole('button', { name: 'Tersalin!' })).toBeTruthy();
     });
 
-    it('klik di luar menu menutup popover', () => {
+    it('klik di luar menu menutup popover', async () => {
       render(<ControlPage />);
-      fireEvent.click(screen.getByRole('button', { name: 'TIMER' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Timer' }));
       expect(screen.getByRole('button', { name: 'Buka Tab Baru' })).toBeTruthy();
       fireEvent.mouseDown(document.body);
-      expect(screen.queryByRole('button', { name: 'Buka Tab Baru' })).toBeNull();
+      await waitFor(() => expect(screen.queryByRole('button', { name: 'Buka Tab Baru' })).toBeNull());
     });
   });
 
@@ -291,7 +298,7 @@ describe('ControlPage', () => {
       vi.useFakeTimers();
       vi.setSystemTime(fixedNow);
       render(<ControlPage />);
-      fireEvent.change(screen.getByLabelText('MODE DURASI'), { target: { value: 'target' } });
+      fireEvent.click(screen.getByRole('radio', { name: 'Timer ke jam' }));
       fireEvent.change(screen.getByTestId('target-hour'), { target: { value: '10' } });
       fireEvent.change(screen.getByTestId('target-minute'), { target: { value: '05' } });
       fireEvent.click(screen.getByRole('button', { name: 'MULAI KE JAM' }));
@@ -305,7 +312,7 @@ describe('ControlPage', () => {
       vi.useFakeTimers();
       vi.setSystemTime(fixedNow);
       render(<ControlPage />);
-      fireEvent.change(screen.getByLabelText('MODE DURASI'), { target: { value: 'target' } });
+      fireEvent.click(screen.getByRole('radio', { name: 'Timer ke jam' }));
       fireEvent.change(screen.getByTestId('target-hour'), { target: { value: '09' } });
       fireEvent.change(screen.getByTestId('target-minute'), { target: { value: '00' } });
       fireEvent.click(screen.getByRole('button', { name: 'MULAI KE JAM' }));
@@ -338,7 +345,8 @@ describe('ControlPage', () => {
 
       expect(store.timerStore.getState().stageMessage?.text).toBe('Mohon tenang');
       expect(screen.queryByTestId('stage-text')).toBeNull();
-      expect(screen.getByText('Mohon tenang')).toBeTruthy();
+      expect(screen.getAllByText('Mohon tenang')).toHaveLength(2);
+      expect(within(screen.getByTestId('preview-matador')).getByText('Mohon tenang')).toBeTruthy();
       expect(screen.getByRole('button', { name: 'DONE / HIDE' })).toBeTruthy();
     });
 
@@ -360,128 +368,5 @@ describe('ControlPage', () => {
       expect(screen.getByTestId('stage-text')).toBeTruthy();
       expect((screen.getByTestId('stage-text') as HTMLTextAreaElement).value).toBe('');
     });
-  });
-
-  describe('tampilan', () => {
-    it('default: mode WARNA aktif, kontrol warna tampil, input URL tidak', () => {
-      render(<ControlPage />);
-      expect(screen.getByLabelText('Warna background')).toBeTruthy();
-      expect(screen.queryByLabelText('URL gambar')).toBeNull();
-    });
-
-    it('ganti mode ke GAMBAR → bgMode image, input URL + galeri muncul', () => {
-      render(<ControlPage />);
-      fireEvent.click(screen.getByRole('button', { name: 'GAMBAR' }));
-      expect(store.timerStore.getState().appearance.bgMode).toBe('image');
-      expect(screen.getByLabelText('URL gambar')).toBeTruthy();
-    });
-
-    it('ubah warna background', () => {
-      render(<ControlPage />);
-      fireEvent.change(screen.getByLabelText('Warna background'), { target: { value: '#ff0000' } });
-      expect(store.timerStore.getState().appearance.bgColor).toBe('#ff0000');
-    });
-
-    it('klik thumbnail galeri menetapkan bgImage (setelah validasi)', () => {
-      render(<ControlPage />);
-      fireEvent.click(screen.getByRole('button', { name: 'GAMBAR' }));
-      fireEvent.click(
-        screen.getByRole('button', { name: `Pilih background ${GALLERY_BACKGROUNDS[0]}` }),
-      );
-      expect(store.timerStore.getState().appearance.bgImage).toBe(GALLERY_BACKGROUNDS[0]);
-    });
-
-    it('input URL valid diterapkan saat blur, yang invalid diabaikan', () => {
-      render(<ControlPage />);
-      fireEvent.click(screen.getByRole('button', { name: 'GAMBAR' }));
-      const input = screen.getByLabelText('URL gambar');
-      fireEvent.change(input, { target: { value: 'https://example.com/a.png' } });
-      fireEvent.blur(input);
-      expect(store.timerStore.getState().appearance.bgImage).toBe('https://example.com/a.png');
-
-      fireEvent.change(input, { target: { value: 'javascript:alert(1)' } });
-      fireEvent.blur(input);
-      expect(store.timerStore.getState().appearance.bgImage).toBe('');
-    });
-
-    it('pilih font, bold, italic, warna font', () => {
-      render(<ControlPage />);
-      fireEvent.change(screen.getByLabelText('Font'), { target: { value: 'oswald' } });
-      expect(store.timerStore.getState().appearance.fontFamily).toBe('oswald');
-      fireEvent.click(screen.getByLabelText('BOLD'));
-      expect(store.timerStore.getState().appearance.bold).toBe(true);
-      fireEvent.click(screen.getByLabelText('ITALIC'));
-      expect(store.timerStore.getState().appearance.italic).toBe(true);
-      fireEvent.change(screen.getByLabelText('Warna font'), { target: { value: '#00ff00' } });
-      expect(store.timerStore.getState().appearance.fontColor).toBe('#00ff00');
-    });
-
-    it('preview memakai font terpilih', () => {
-      render(<ControlPage />);
-      fireEvent.change(screen.getByLabelText('Font'), { target: { value: 'teko' } });
-      expect(screen.getByTestId('preview-time').className).toContain('app-font-teko');
-    });
-
-    it('RESET TAMPILAN mengembalikan semua ke default', () => {
-      render(<ControlPage />);
-      fireEvent.change(screen.getByLabelText('Warna font'), { target: { value: '#00ff00' } });
-      fireEvent.click(screen.getByRole('button', { name: 'RESET TAMPILAN' }));
-      expect(store.timerStore.getState().appearance).toEqual(DEFAULT_APPEARANCE);
-    });
-
-    it('upload gambar sukses: bgImage jadi URL hasil upload', async () => {
-      const fetchMock = vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => ({ url: '/uploads/from-upload.png' }),
-      });
-      vi.stubGlobal('fetch', fetchMock);
-
-      render(<ControlPage />);
-      fireEvent.click(screen.getByRole('button', { name: 'GAMBAR' }));
-
-      const input = screen.getByLabelText('Upload gambar') as HTMLInputElement;
-      const file = new File([new Uint8Array([1, 2, 3])], 'bg.png', { type: 'image/png' });
-      Object.defineProperty(input, 'files', { value: [file], configurable: true });
-      fireEvent.change(input);
-
-      await waitFor(() =>
-        expect(store.timerStore.getState().appearance.bgImage).toBe('/uploads/from-upload.png'),
-      );
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/upload',
-        expect.objectContaining({ method: 'POST' }),
-      );
-    });
-
-    it('upload gagal: pesan error tampil, bgImage tidak berubah', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({}) }),
-      );
-
-      render(<ControlPage />);
-      fireEvent.click(screen.getByRole('button', { name: 'GAMBAR' }));
-      const before = store.timerStore.getState().appearance.bgImage;
-
-      const input = screen.getByLabelText('Upload gambar') as HTMLInputElement;
-      const file = new File([new Uint8Array([1, 2, 3])], 'bg.png', { type: 'image/png' });
-      Object.defineProperty(input, 'files', { value: [file], configurable: true });
-      fireEvent.change(input);
-
-      expect(await screen.findByText(/Upload gagal/)).toBeTruthy();
-      expect(store.timerStore.getState().appearance.bgImage).toBe(before);
-    });
-  });
-
-  it('section LAYOUT membuka modal editor per halaman', async () => {
-    render(<ControlPage />);
-    fireEvent.click(screen.getByRole('button', { name: 'EDIT LAYOUT TIMER' }));
-    expect(screen.getByTestId('layout-canvas')).toBeTruthy();
-    expect(screen.getByTestId('layout-box-digit')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'TUTUP' }));
-    expect(screen.queryByTestId('layout-canvas')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'EDIT LAYOUT MATADOR' }));
-    expect(screen.getByTestId('layout-box-clock')).toBeTruthy();
   });
 });

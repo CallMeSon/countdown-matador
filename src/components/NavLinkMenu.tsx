@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { ArrowUpRight } from 'lucide-react';
+import { usePresence } from '@/hooks/usePresence';
 
 export function NavLinkMenu({
   label,
@@ -14,6 +16,7 @@ export function NavLinkMenu({
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const { mounted } = usePresence(open, 100);
 
   useEffect(() => {
     if (!open) return;
@@ -48,24 +51,29 @@ export function NavLinkMenu({
     <div ref={ref} className={`relative ${className ?? ''}`}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-6 py-4 text-xl font-bold tracking-widest transition-transform active:scale-95 hover:bg-zinc-800"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="min-h-[44px] w-full rounded-control border border-line bg-control px-4 py-2 font-medium text-fg transition-transform active:scale-95 hover:bg-fg/5"
       >
-        {label}
+        <span className="inline-flex items-center justify-center gap-1.5">
+          {label}
+          <ArrowUpRight aria-hidden="true" size={16} />
+        </span>
       </button>
-      {open && (
-        <div className="absolute left-0 top-full z-20 mt-2 w-max min-w-[11rem] animate-fadeIn overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900 shadow-lg">
+      {mounted && (
+        <div className={`absolute left-0 top-full z-20 mt-2 w-max min-w-full max-w-[80vw] ${open ? 'm-menu-in' : 'm-menu-out'} overflow-hidden rounded-control border border-line bg-card text-fg shadow-lg`}>
           <button
             onClick={() => {
               window.open(path, '_blank', 'noopener,noreferrer');
               setOpen(false);
             }}
-            className="block w-full px-4 py-3 text-left text-sm font-semibold tracking-wide hover:bg-zinc-800"
+            className="block w-full px-4 py-3 text-left text-sm font-semibold tracking-wide hover:bg-fg/5"
           >
             Buka Tab Baru
           </button>
           <button
             onClick={handleCopy}
-            className="block w-full px-4 py-3 text-left text-sm font-semibold tracking-wide hover:bg-zinc-800"
+            className="block w-full px-4 py-3 text-left text-sm font-semibold tracking-wide hover:bg-fg/5"
           >
             {copied ? 'Tersalin!' : 'Salin Link'}
           </button>

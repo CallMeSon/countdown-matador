@@ -123,19 +123,21 @@ describe('FONT_OPTIONS / GALLERY_BACKGROUNDS', () => {
 describe('mergeIncomingState layout', () => {
   it('mengisi layout yang hilang dari state lama', () => {
     const merged = mergeIncomingState({ ...DEFAULT_TIMER_STATE, layoutTimer: undefined, layoutMatador: undefined });
-    expect(merged.layoutTimer).toEqual({ offsets: {}, texts: [] });
-    expect(merged.layoutMatador).toEqual({ offsets: {}, texts: [] });
+    expect(merged.layoutTimer).toEqual({ styles: {}, texts: [] });
+    expect(merged.layoutMatador).toEqual({ styles: {}, texts: [] });
   });
 
-  it('menormalisasi offset dan cap teks berlebih', () => {
+  it('menormalisasi gaya elemen, membuang offsets lama, dan cap teks berlebih', () => {
     const merged = mergeIncomingState({
       ...DEFAULT_TIMER_STATE,
       layoutTimer: {
         offsets: { digit: { dx: 5000, dy: 0 } },
+        styles: { digit: { size: 5000 } },
         texts: Array.from({ length: 7 }, (_, i) => ({ id: `id00000${i}`, text: 'X', x: 0, y: 0, size: 64 })),
-      },
+      } as never,
     });
-    expect(merged.layoutTimer.offsets.digit).toEqual({ dx: 900, dy: 0 });
+    expect(merged.layoutTimer).not.toHaveProperty('offsets');
+    expect(merged.layoutTimer.styles.digit).toEqual({ size: 150 });
     expect(merged.layoutTimer.texts).toHaveLength(5);
   });
 });

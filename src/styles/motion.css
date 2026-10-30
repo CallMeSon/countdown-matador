@@ -1,0 +1,58 @@
+/* Animasi UI kontrol: hanya sebagai umpan balik (tekan, hover, fokus, buka/tutup).
+   Hanya transform/opacity/warna. Tidak menyentuh animasi stage tampilan. */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-exit: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+  --t-press: 140ms;
+  --t-hover: 180ms;
+  --t-ui: 240ms;
+}
+
+@keyframes m-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes m-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes m-rise-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes m-menu-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes m-pop-in { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: scale(1); } }
+@keyframes m-scale-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+@keyframes m-ping { from { opacity: 0.7; transform: scale(1); } to { opacity: 0; transform: scale(2.4); } }
+
+/* Dasar (juga berlaku di reduced-motion): hanya opacity dan warna. */
+.btn {
+  transition: background-color var(--t-hover) ease, border-color var(--t-hover) ease,
+    color var(--t-hover) ease, opacity var(--t-hover) ease;
+}
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible {
+  transition: outline-offset 120ms var(--ease-out);
+}
+.m-fade-in { animation: m-fade-in 160ms ease both; }
+.m-fade-out { animation: m-fade-out 120ms var(--ease-exit) forwards; }
+.m-menu-in { animation: m-fade-in 160ms ease both; }
+.m-menu-out { animation: m-fade-out 100ms var(--ease-exit) forwards; }
+.m-sel-in { animation: m-fade-in 120ms ease both; }
+.m-handle-in { animation: m-fade-in 120ms ease both; }
+.m-toolbar-in { animation: m-fade-in 140ms ease both; }
+.m-add-in { animation: m-fade-in 180ms ease both; }
+.m-guide { transition: opacity 100ms ease; }
+.m-row { transition: background-color var(--t-hover) ease, border-color var(--t-hover) ease; }
+.m-ping { animation: m-fade-out 600ms ease forwards; }
+.m-disclosure { transition: grid-template-rows var(--t-ui) var(--ease-out), opacity var(--t-ui) ease; }
+.m-seg-indicator { transition: transform var(--t-ui) var(--ease-out); }
+.theme-transition, .theme-transition *, .theme-transition *::before, .theme-transition *::after {
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease !important;
+}
+.theme-transition .theme-switch-knob {
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1), background-color 200ms ease !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn { transition-property: background-color, border-color, color, opacity, transform; transition-duration: var(--t-hover), var(--t-hover), var(--t-hover), var(--t-hover), var(--t-press); }
+  .btn:active:not(:disabled) { transform: scale(0.97); }
+  .m-menu-in { animation-name: m-menu-in; animation-timing-function: var(--ease-out); }
+  .m-handle-in { animation-name: m-pop-in; animation-timing-function: var(--ease-out); }
+  .m-toolbar-in { animation-name: m-rise-in; animation-timing-function: var(--ease-out); }
+  .m-add-in { animation-name: m-scale-in; animation-timing-function: var(--ease-out); }
+  .m-ping { animation-name: m-ping; animation-timing-function: var(--ease-out); }
+  .theme-switch { transition: background-color 300ms ease; }
+  .theme-switch-knob { transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1), background-color 200ms ease; }
+  .theme-switch-icon { transition: color 250ms ease; }
+}

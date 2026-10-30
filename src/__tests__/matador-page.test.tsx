@@ -242,16 +242,21 @@ describe('MatadorPage', () => {
     });
   });
 
-  it('offset matador diterapkan dan teks custom tampil', async () => {
+  it('gaya elemen matador diterapkan, ticker contoh hanya di editor, dan teks custom tampil', async () => {
     window.history.pushState({}, '', '/matador?room=TEST');
     const { default: MatadorPage } = await import('@/app/matador/page');
     const { timerStore } = await import('@/lib/timer-store');
     timerStore.setRoom('TEST');
-    timerStore.setLayoutOffset('matador', 'clock', { dx: -80, dy: 40 });
+    timerStore.setElementStyle('matador', 'clock', { size: 50, color: '#00ff00' });
+    timerStore.setElementStyle('matador', 'label', { hidden: true });
     timerStore.addCustomText('matador', 'KEYNOTE');
     render(<MatadorPage />);
     const clock = screen.getByTestId('matador-timer');
-    expect((clock.parentElement as HTMLElement).style.transform).toBe('translate(-80px, 40px)');
+    expect(clock.style.fontSize).toContain('0.5');
+    expect(clock.style.fontSize).toContain('clamp(2.5rem');
+    expect(clock.style.color).toBe('rgb(0, 255, 0)');
+    expect((screen.getByTestId('matador-label').parentElement as HTMLElement).className).toContain('invisible');
+    expect(screen.queryByTestId('stage-ticker-text')).toBeNull(); // contoh ticker hanya di editor
     expect(screen.getByText('KEYNOTE').getAttribute('data-testid')).toMatch(/^custom-text-/);
   });
 });

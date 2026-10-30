@@ -1,0 +1,33 @@
+/* Token desain (tema melius dari file Pencil). Nilai warna = tiga angka RGB
+   supaya bisa dipakai dengan alpha di Tailwind: rgb(var(--x) / <alpha>). */
+:root {
+  --page: 227 227 227;        /* field */
+  --card: 255 255 255;        /* surface */
+  --input: 255 255 255;
+  --control: 250 250 250;     /* canvas */
+  --fg: 14 14 14;             /* ink */
+  --sub: 103 103 103;         /* muted */
+  --line: 0 0 0;
+  --line-a: 0.08;
+  --well: 217 217 217;        /* chip: latar area kanvas */
+  --nav: 26 22 22;            /* ink-warm, nav selalu gelap */
+  --accent: 240 78 35;
+  --accent-hover: 217 66 15;
+  --highlight: 255 247 139;
+  --on-accent: 250 250 250;
+  --danger: 229 72 77;
+  --faint: 156 153 150;
+}
+
+:root[data-theme='dark'] {
+  --page: 14 14 14;           /* ground */
+  --card: 28 25 24;           /* satu langkah tone di atas page */
+  --input: 42 38 36;          /* satu langkah di atas card */
+  --control: 42 38 36;
+  --fg: 250 250 250;          /* canvas */
+  --sub: 176 172 168;         /* muted, ~8:1 di atas card */
+  --line: 255 255 255;
+  --line-a: 0.14;
+  --well: 40 36 34;           /* chip dan area kanvas: terlihat di atas page maupun card */
+  --nav: 36 32 30;
+}

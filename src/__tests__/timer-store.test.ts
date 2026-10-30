@@ -278,10 +278,30 @@ describe('timerStore', () => {
   });
 
   describe('timerStore layout', () => {
-    it('setLayoutOffset menyimpan offset per halaman + broadcast', () => {
-      store.timerStore.setLayoutOffset('matador', 'clock', { dx: 100, dy: -50 });
-      expect(store.timerStore.getState().layoutMatador.offsets.clock).toEqual({ dx: 100, dy: -50 });
-      expect(store.timerStore.getState().layoutTimer.offsets).toEqual({});
+    it('setElementStyle menyimpan gaya per elemen per halaman', () => {
+      store.timerStore.setElementStyle('matador', 'clock', { color: '#FF0000', size: 120 });
+      expect(store.timerStore.getState().layoutMatador.styles.clock).toEqual({ color: '#ff0000', size: 120 });
+      expect(store.timerStore.getState().layoutTimer.styles).toEqual({});
+    });
+
+    it('setElementStyle menggabung patch; undefined/default menghapus properti, kosong menghapus elemen', () => {
+      store.timerStore.setElementStyle('timer', 'digit', { size: 130 });
+      store.timerStore.setElementStyle('timer', 'digit', { color: '#00ff00', hidden: true });
+      expect(store.timerStore.getState().layoutTimer.styles.digit).toEqual({ size: 130, color: '#00ff00', hidden: true });
+      store.timerStore.setElementStyle('timer', 'digit', { hidden: undefined, size: 100, color: undefined });
+      expect(store.timerStore.getState().layoutTimer.styles.digit).toBeUndefined();
+    });
+
+    it('setElementStyle membatasi ukuran dan mengabaikan nilai tidak valid', () => {
+      store.timerStore.setElementStyle('timer', 'digit', { size: 999, color: 'merah' as unknown as string });
+      expect(store.timerStore.getState().layoutTimer.styles.digit).toEqual({ size: 150 });
+    });
+
+    it('resetElementStyle hanya menghapus satu elemen', () => {
+      store.timerStore.setElementStyle('matador', 'label', { color: '#ff0000' });
+      store.timerStore.setElementStyle('matador', 'clock', { color: '#00ff00' });
+      store.timerStore.resetElementStyle('matador', 'label');
+      expect(Object.keys(store.timerStore.getState().layoutMatador.styles)).toEqual(['clock']);
     });
 
     it('add/update/remove custom text', () => {
@@ -300,17 +320,50 @@ describe('timerStore', () => {
       expect(store.timerStore.getState().layoutTimer.texts).toHaveLength(5);
     });
 
+    it('updateCustomText menerima field gaya lewat sanitasi', () => {
+      const id = store.timerStore.addCustomText('timer', 'A') as string;
+      store.timerStore.updateCustomText('timer', id, { color: 'merah', spacing: 999, bold: false, hidden: true });
+      const b = store.timerStore.getState().layoutTimer.texts[0];
+      expect(b).toMatchObject({ spacing: 40, bold: false, hidden: true });
+      expect(b).not.toHaveProperty('color');
+    });
+
+    it('duplicateCustomText menyalin + geser, null bila penuh/id tak ada', () => {
+      const id = store.timerStore.addCustomText('timer', 'A') as string;
+      store.timerStore.updateCustomText('timer', id, { x: 1900, y: 100, italic: true });
+      const dup = store.timerStore.duplicateCustomText('timer', id) as string;
+      expect(dup).toMatch(/^[a-z0-9]{8}$/);
+      expect(dup).not.toBe(id);
+      expect(store.timerStore.getState().layoutTimer.texts[1]).toMatchObject({ x: 1920, y: 140, italic: true, text: 'A' });
+      expect(store.timerStore.duplicateCustomText('timer', 'zzzzzzzz')).toBeNull();
+      for (let i = 0; i < 3; i++) store.timerStore.duplicateCustomText('timer', id);
+      expect(store.timerStore.getState().layoutTimer.texts).toHaveLength(5);
+      expect(store.timerStore.duplicateCustomText('timer', id)).toBeNull();
+    });
+
+    it('replaceLayout menormalisasi lalu mengganti layout halaman', () => {
+      store.timerStore.replaceLayout('timer', {
+        styles: { digit: { size: 5000 }, bogus: { size: 80 } } as never,
+        texts: [{ id: 'abcd1234', text: 'X', x: 5, y: 5, size: 64, spacing: 999 }],
+      });
+      const l = store.timerStore.getState().layoutTimer;
+      expect(l.styles.digit.size).toBe(150);
+      expect(l.styles).not.toHaveProperty('bogus');
+      expect(l.texts[0].spacing).toBe(40);
+    });
+
     it('resetLayout mengembalikan default halaman itu saja', () => {
-      store.timerStore.setLayoutOffset('timer', 'digit', { dx: 50, dy: 50 });
-      store.timerStore.setLayoutOffset('matador', 'clock', { dx: 50, dy: 50 });
+      store.timerStore.setElementStyle('timer', 'digit', { size: 120 });
+      store.timerStore.setElementStyle('matador', 'clock', { size: 120 });
       store.timerStore.resetLayout('timer');
-      expect(store.timerStore.getState().layoutTimer).toEqual({ offsets: {}, texts: [] });
-      expect(store.timerStore.getState().layoutMatador.offsets.clock).toEqual({ dx: 50, dy: 50 });
+      expect(store.timerStore.getState().layoutTimer).toEqual({ styles: {}, texts: [] });
+      expect(store.timerStore.getState().layoutMatador.styles.clock).toEqual({ size: 120 });
     });
 
     it('tanpa room semua method no-op', () => {
       (store.timerStore as unknown as { room: null }).room = null;
-      store.timerStore.setLayoutOffset('timer', 'digit', { dx: 9, dy: 9 });
+      store.timerStore.setElementStyle('timer', 'digit', { size: 90 });
+      expect(store.timerStore.getState().layoutTimer.styles).toEqual({});
       expect(store.timerStore.addCustomText('timer', 'X')).toBeNull();
     });
   });

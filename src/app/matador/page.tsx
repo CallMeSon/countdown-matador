@@ -2,18 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useTimer } from '@/hooks/useTimer';
-import { useLiveClock } from '@/hooks/useLiveClock';
-import { useBlinkWindow } from '@/hooks/useBlinkWindow';
-import { useExitTransition } from '@/hooks/useExitTransition';
 import { useRoom } from '@/hooks/useRoom';
 import { timerStore } from '@/lib/timer-store';
 import { STAGE_HEIGHT, STAGE_WIDTH, useStageScale } from '@/hooks/useStageScale';
-import { DEFAULT_APPEARANCE, type StageMessage } from '@/types/timer';
+import { DEFAULT_APPEARANCE } from '@/types/timer';
 import { StageBackground } from '@/components/StageBackground';
-import { LayoutOverlay } from '@/components/LayoutOverlay';
-import { appearanceClass } from '@/lib/appearance';
-
-const TICKER_EXIT_MS = 400;
+import { MatadorStage } from '@/components/stage/MatadorStage';
 
 export default function MatadorPage() {
   const { ready, room, lastUsedRoom, setRoom } = useRoom();
@@ -56,11 +50,11 @@ function RoomEntryGate({ onSubmit }: { onSubmit: (code: string) => void }) {
           placeholder="KODE ROOM"
           aria-label="Kode room"
           autoFocus
-          className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-center text-lg font-semibold tracking-[0.3em] text-white uppercase focus:border-emerald-500 focus:outline-none"
+          className="w-full rounded-control border border-line-dark bg-ink-warm px-4 py-3 text-center text-lg font-semibold tracking-[0.3em] text-canvas uppercase focus:border-accent"
         />
         <button
           type="submit"
-          className="w-full rounded-xl bg-emerald-500 px-6 py-3 font-bold tracking-widest text-black hover:bg-emerald-400"
+          className="w-full rounded-control bg-accent px-6 py-3 font-bold tracking-widest text-on-accent hover:bg-accent-hover"
         >
           TAMPILKAN
         </button>
@@ -70,133 +64,18 @@ function RoomEntryGate({ onSubmit }: { onSubmit: (code: string) => void }) {
 }
 
 function MatadorDisplay() {
-  const { state, displayTime, overtimeTime, secondsLeft, isOvertime } = useTimer();
-  const [mounted, setMounted] = useState(false);
-  const isClockMode = state.displayMode === 'clock';
-  const nowTime = useLiveClock(isClockMode);
-  const hasStageMessage = state.stageMessage !== null;
-  const { mounted: tickerMounted, exiting: tickerExiting } = useExitTransition(hasStageMessage, TICKER_EXIT_MS);
-
-  // Tetap ingat pesan terakhir supaya teks & blink-nya nggak hilang duluan
-  // selama animasi exit main (state.stageMessage sendiri udah null saat itu).
-  const [lastMessage, setLastMessage] = useState<StageMessage | null>(null);
-  useEffect(() => {
-    if (state.stageMessage) setLastMessage(state.stageMessage);
-  }, [state.stageMessage]);
-
-  const stageBlinking = useBlinkWindow(lastMessage?.sentAt ?? null);
+  const { state } = useTimer();
   const scale = useStageScale();
   const appearance = state.appearance ?? DEFAULT_APPEARANCE;
-  const appClass = appearanceClass(appearance);
-  const layout = state.layoutMatador ?? { offsets: {}, texts: [] };
-  const off = (k: string) => layout.offsets?.[k] ?? { dx: 0, dy: 0 };
-  const t = (k: string) => `translate(${off(k).dx}px, ${off(k).dy}px)`;
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const critical = !isOvertime && secondsLeft <= 10 && secondsLeft > 0;
-  const timerColor =
-    isOvertime || (critical && secondsLeft <= 5)
-      ? 'text-red-500'
-      : critical
-        ? 'text-amber-400'
-        : '';
-  const timerColorStyle = isOvertime || critical ? undefined : { color: appearance.fontColor };
-
-  const digitClass = `timer-digits shrink-0 font-anton text-[clamp(2.5rem,8cqw,7rem)] font-bold leading-none ${timerColor}${
-    appClass ? ` ${appClass}` : ''
-  }`;
 
   return (
     <main className="fixed inset-0 flex items-center justify-center overflow-hidden bg-black">
       <StageBackground appearance={appearance} />
       <div
-        className="timer-container relative z-10 flex flex-col overflow-hidden"
+        className="relative z-10"
         style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT, transform: `scale(${scale})` }}
       >
-        {/* Bar atas: label kiri, badge overtime di tengah, timer kanan */}
-        <header className="relative z-10 flex items-center gap-4 border-b border-zinc-800/60 px-6 py-2">
-          {!tickerMounted && (
-            <div style={{ transform: t('label') }} className="shrink-0">
-            <span
-              data-testid="matador-label"
-              style={{ color: appearance.fontColor }}
-              className={`whitespace-nowrap font-inter text-[clamp(1.25rem,4cqw,4.25rem)] font-black uppercase leading-none tracking-tight text-white${
-                appClass ? ` ${appClass}` : ''
-              }`}
-            >
-              {isClockMode ? 'CURRENT TIME' : 'COUNTDOWN TIMER'}
-            </span>
-            </div>
-          )}
-
-          {/* Kolom tengah: ticker pesan panggung (prioritas, dapat lebar penuh
-              waktu label disembunyikan) / badge overtime / kosong */}
-          <div className="flex min-w-0 flex-1 justify-center" style={{ transform: t('ticker') }}>
-            {tickerMounted && lastMessage ? (
-              <div className={`w-full max-w-full overflow-hidden rounded-lg ${tickerExiting ? 'anim-timesup-out' : 'anim-badge-in'}`}>
-                {/* Class blink & entrance/exit dipisah 2 elemen — keduanya nyetel properti CSS
-                    `animation`, kalau digabung di 1 elemen yang belakangan di stylesheet
-                    menang total dan nge-cancel animasi yang lain. */}
-                <div
-                  data-testid="stage-ticker"
-                  className={`overflow-hidden rounded-lg py-2 ${stageBlinking ? 'anim-ticker-blink' : 'bg-red-700'}`}
-                >
-                  <div
-                    data-testid="stage-ticker-text"
-                    className={`animate-ticker-scroll inline-block whitespace-nowrap pl-[100%] font-inter text-[clamp(0.9rem,2.2cqw,2.25rem)] font-extrabold uppercase leading-none tracking-wide text-white${
-                      appClass ? ` ${appClass}` : ''
-                    }`}
-                  >
-                    {lastMessage.text}
-                  </div>
-                </div>
-              </div>
-            ) : mounted && isOvertime && !isClockMode ? (
-              <span
-                data-testid="matador-timesup"
-                className={`anim-badge-in flex items-center gap-2 whitespace-nowrap rounded-lg bg-red-600 px-4 py-2 font-inter text-[clamp(0.7rem,1.6cqw,1.75rem)] font-extrabold uppercase leading-none tracking-wider text-white${
-                  appClass ? ` ${appClass}` : ''
-                }`}
-              >
-                <span aria-hidden="true">⚠️</span>
-                OVERTIME / KELEBIHAN WAKTU
-                <span aria-hidden="true">⚠️</span>
-              </span>
-            ) : null}
-          </div>
-
-          {isClockMode ? (
-            <div style={{ transform: t('clock') }} className="shrink-0">
-            <span
-              data-testid="matador-clock"
-              className={`timer-digits shrink-0 font-anton text-[clamp(2.5rem,8cqw,7rem)] font-bold leading-none text-emerald-400${
-                appClass ? ` ${appClass}` : ''
-              }`}
-            >
-              {nowTime}
-            </span>
-            </div>
-          ) : mounted && isOvertime ? (
-            <div style={{ transform: t('clock') }} className="shrink-0">
-            <span data-testid="matador-overtime" className={`anim-glow ${digitClass}`}>
-              {overtimeTime}
-            </span>
-            </div>
-          ) : (
-            <div style={{ transform: t('clock') }} className="shrink-0">
-            <span data-testid="matador-timer" style={timerColorStyle} className={digitClass}>
-              {displayTime}
-            </span>
-            </div>
-          )}
-        </header>
-
-        {/* Space kosong untuk PPT */}
-        <div data-testid="ppt-space" className="relative z-10 flex-1" aria-label="ruang presentasi" />
-        <LayoutOverlay texts={layout.texts ?? []} appearance={appearance} />
+        <MatadorStage state={state} />
       </div>
     </main>
   );

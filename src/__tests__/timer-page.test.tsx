@@ -237,16 +237,21 @@ describe('TimerPage', () => {
     });
   });
 
-  it('offset digit diterapkan sebagai translate dan teks custom tampil', async () => {
+  it('gaya digit (ukuran, warna, sembunyikan) diterapkan dan teks custom tampil', async () => {
     window.history.pushState({}, '', '/timer?room=TEST');
     const { default: TimerPage } = await import('@/app/timer/page');
     const { timerStore } = await import('@/lib/timer-store');
     timerStore.setRoom('TEST');
-    timerStore.setLayoutOffset('timer', 'digit', { dx: 100, dy: -50 });
+    timerStore.setElementStyle('timer', 'digit', { size: 50, color: '#00ff00' });
     timerStore.addCustomText('timer', 'SESI 1');
     render(<TimerPage />);
-    const digit = screen.getByTestId('countdown-main').parentElement?.parentElement as HTMLElement;
-    expect(digit.style.transform).toBe('translate(100px, -50px)');
+    const main = screen.getByTestId('countdown-main');
+    expect(main.style.fontSize).toBe('240px'); // 480 * 50%
+    expect(main.style.color).toBe('rgb(0, 255, 0)');
+    const wrapper = main.parentElement?.parentElement as HTMLElement;
+    expect(wrapper.className).not.toContain('invisible');
+    act(() => timerStore.setElementStyle('timer', 'digit', { hidden: true }));
+    expect(wrapper.className).toContain('invisible');
     expect(screen.getByText('SESI 1').getAttribute('data-testid')).toMatch(/^custom-text-/);
   });
 });

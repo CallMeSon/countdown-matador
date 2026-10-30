@@ -1,8 +1,8 @@
 'use client';
 
-import { TimerState, DEFAULT_TIMER_STATE } from '@/types/timer';
+import { TimerState, DEFAULT_TIMER_STATE, CustomTextBlock, ElementStyle, PageLayout } from '@/types/timer';
 import { mergeIncomingState, sanitizeImageUrl } from '@/lib/appearance';
-import { generateBlockId, normalizeOffset, LAYOUT_LIMITS } from '@/lib/layout';
+import { generateBlockId, normalizePageLayout, sanitizeElementStyle, sanitizeTextStyle, LAYOUT_LIMITS } from '@/lib/layout';
 
 export type LayoutPage = 'timer' | 'matador';
 
@@ -229,14 +229,23 @@ class TimerStore {
     return page === 'timer' ? 'layoutTimer' : 'layoutMatador';
   }
 
-  setLayoutOffset(page: LayoutPage, key: string, offset: { dx: number; dy: number }): void {
+  // Gabungkan `patch` ke gaya elemen bawaan; nilai undefined menghapus properti itu (kembali ke bawaan).
+  setElementStyle(page: LayoutPage, key: string, patch: Partial<ElementStyle>): void {
     if (!this.room) return;
     const k = this.layoutKey(page);
-    const normalized = normalizeOffset(offset);
-    this.setState(
-      { ...this.state, [k]: { ...this.state[k], offsets: { ...this.state[k].offsets, [key]: normalized } } },
-      true,
-    );
+    const styles = { ...this.state[k].styles };
+    const merged = sanitizeElementStyle({ ...styles[key], ...patch });
+    if (Object.keys(merged).length > 0) styles[key] = merged;
+    else delete styles[key];
+    this.setState({ ...this.state, [k]: { ...this.state[k], styles } }, true);
+  }
+
+  resetElementStyle(page: LayoutPage, key: string): void {
+    if (!this.room) return;
+    const k = this.layoutKey(page);
+    const styles = { ...this.state[k].styles };
+    delete styles[key];
+    this.setState({ ...this.state, [k]: { ...this.state[k], styles } }, true);
   }
 
   addCustomText(page: LayoutPage, text: string): string | null {
@@ -251,7 +260,7 @@ class TimerStore {
     return id;
   }
 
-  updateCustomText(page: LayoutPage, id: string, patch: { text?: string; x?: number; y?: number; size?: number }): void {
+  updateCustomText(page: LayoutPage, id: string, patch: Partial<Omit<CustomTextBlock, 'id'>>): void {
     if (!this.room) return;
     const k = this.layoutKey(page);
     const clampInt = (v: number, min: number, max: number): number =>
@@ -272,9 +281,36 @@ class TimerStore {
       if (patch.size !== undefined && Number.isFinite(patch.size)) {
         next.size = clampInt(patch.size, LAYOUT_LIMITS.SIZE_MIN, LAYOUT_LIMITS.SIZE_MAX);
       }
+      // Field gaya: nilai tidak valid diabaikan (field lama dipertahankan).
+      Object.assign(next, sanitizeTextStyle(patch));
       return next;
     });
     this.setState({ ...this.state, [k]: { ...this.state[k], texts } }, true);
+  }
+
+  duplicateCustomText(page: LayoutPage, id: string): string | null {
+    if (!this.room) return null;
+    const k = this.layoutKey(page);
+    const src = this.state[k].texts.find((b) => b.id === id);
+    if (!src || this.state[k].texts.length >= LAYOUT_LIMITS.BLOCKS_MAX) return null;
+    const clampInt = (v: number, min: number, max: number): number =>
+      Math.min(max, Math.max(min, Math.round(v)));
+    const newId = generateBlockId();
+    const copy: CustomTextBlock = {
+      ...src,
+      id: newId,
+      x: clampInt(src.x + 40, LAYOUT_LIMITS.X_MIN, LAYOUT_LIMITS.X_MAX),
+      y: clampInt(src.y + 40, LAYOUT_LIMITS.Y_MIN, LAYOUT_LIMITS.Y_MAX),
+    };
+    this.setState({ ...this.state, [k]: { ...this.state[k], texts: [...this.state[k].texts, copy] } }, true);
+    return newId;
+  }
+
+  // Untuk undo/redo: ganti seluruh layout halaman (dinormalisasi dulu).
+  replaceLayout(page: LayoutPage, layout: PageLayout): void {
+    if (!this.room) return;
+    const k = this.layoutKey(page);
+    this.setState({ ...this.state, [k]: normalizePageLayout(layout) }, true);
   }
 
   removeCustomText(page: LayoutPage, id: string): void {
@@ -287,7 +323,7 @@ class TimerStore {
   resetLayout(page: LayoutPage): void {
     if (!this.room) return;
     const k = this.layoutKey(page);
-    this.setState({ ...this.state, [k]: { offsets: {}, texts: [] } }, true);
+    this.setState({ ...this.state, [k]: { styles: {}, texts: [] } }, true);
   }
 
   computeRemaining(state: TimerState, now: number): number {
