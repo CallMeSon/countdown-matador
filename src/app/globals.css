@@ -378,3 +378,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   outline-offset: 4px;
   border-radius: 9999px;
 }
+
+/* Logo footer: versi warna di mode terang, versi putih di mode gelap. */
+.logo-dark { display: none; }
+:root[data-theme='dark'] .logo-light { display: none; }
+:root[data-theme='dark'] .logo-dark { display: inline-block; }

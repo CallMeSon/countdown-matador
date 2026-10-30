@@ -4,6 +4,8 @@ import { Segmented } from '@/components/ui/Segmented';
 import { Field } from '@/components/ui/Field';
 import { Disclosure } from '@/components/ui/Disclosure';
 import { AppNav } from '@/components/ui/AppNav';
+import { AppFooter } from '@/components/ui/AppFooter';
+import { PageShell } from '@/components/ui/PageShell';
 import { Button } from '@/components/ui/Button';
 
 const OPTS = [
@@ -86,5 +88,29 @@ describe('Button', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'START' }));
     expect(onClick).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('AppFooter', () => {
+  it('menampilkan Powered by DigiOH dan hak cipta tahun berjalan', () => {
+    render(<AppFooter />);
+    const link = screen.getByRole('link', { name: 'Powered by DigiOH' });
+    expect(link.getAttribute('href')).toBe('https://digioh.id');
+    expect(link.getAttribute('rel')).toContain('noopener');
+    expect(screen.getByText(`© ${new Date().getFullYear()} DigiOH. Seluruh hak cipta dilindungi.`)).toBeTruthy();
+  });
+
+  it('PageShell memasang footer di bawah konten', () => {
+    render(<PageShell><p>isi</p></PageShell>);
+    expect(screen.getByText('isi')).toBeTruthy();
+    expect(screen.getByRole('contentinfo')).toBeTruthy();
+  });
+});
+
+describe('AppNav brand', () => {
+  it('menampilkan logo DigiOH sebagai merek', () => {
+    render(<AppNav room="AB12CD" active="control" />);
+    const logo = screen.getByAltText('DigiOH Timer');
+    expect(logo.getAttribute('src')).toBe('/brand/digioh-logo-white.svg');
   });
 });

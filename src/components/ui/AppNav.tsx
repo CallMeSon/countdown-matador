@@ -17,7 +17,9 @@ export function AppNav({ room, active }: { room?: string; active?: 'control' | '
 
   return (
     <nav className="flex min-h-14 w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-control bg-nav px-3 py-2 text-canvas sm:gap-x-4 sm:px-4">
-      <span className="order-1 font-bold">Matador</span>
+      {/* Top bar selalu gelap, jadi memakai logo versi putih. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand/digioh-logo-white.svg" alt="DigiOH Timer" className="order-1 h-7 w-auto sm:h-8" />
       {room && (
         <div className="order-3 flex w-full items-center gap-1 sm:order-2 sm:w-auto">
           {link('control', 'Control')}

@@ -3,7 +3,11 @@ import './globals.css';
 import { THEME_INIT_SCRIPT } from '@/lib/theme';
 
 export const metadata: Metadata = {
-  title: 'Matador Timer',
+  title: 'DigiOH Timer',
+  icons: {
+    icon: '/brand/digioh-logomark.svg',
+    apple: '/brand/digioh-logomark.svg',
+  },
   description: 'Sederhana: kontrol, countdown, tampilan matador. Sinkron antar perangkat.',
 };
 
