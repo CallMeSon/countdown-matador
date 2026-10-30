@@ -25,6 +25,8 @@ Event countdown system with three pages sharing one timer state per **room** (co
 - Timer state is timestamp-based (`startedAt`, `pausedRemaining`, `duration`), so displays derive remaining time locally. `src/lib/timer-phase.ts` maps it to phases (running, overtime, and so on).
 - Incoming state is normalized with `mergeIncomingState` (`src/lib/appearance.ts`), so older or partial state from the relay still works. `DEFAULT_TIMER_STATE` is duplicated in `server/ws-server.js` and `src/types/timer.ts`. Change both.
 - `NEXT_PUBLIC_WS_URL` overrides the WebSocket URL. The default is same-origin `/ws`.
+- Relay limits: WS messages max 64 KiB, room id `[A-Za-z0-9_-]{1,32}`, max rooms `MAX_ROOMS` (500), uploads capped by `MAX_UPLOAD_BYTES` (8 MiB each), `MAX_UPLOAD_DIR_BYTES` (512 MiB total), 4 concurrent. Every STATE message is filtered by `normalizeState` (`server/layout-style.js`).
+- Access control is only the room code (no accounts). Keep codes random (5 chars); avoid short custom codes. Per-IP rate limits belong in nginx: `limit_req` on `/ws` and `/upload`, `client_max_body_size 8m`. The relay needs Node >= 18.
 
 ### Build and deploy
 
@@ -34,7 +36,7 @@ Event countdown system with three pages sharing one timer state per **room** (co
 ### Display layout
 
 - Displays render a fixed 1920×1080 stage scaled to the viewport (`useStageScale`, `.timer-container` container queries in `globals.css`). Sizing uses `cqw`/`cqh`, not viewport units.
-- Per-page layout (`layoutTimer`, `layoutMatador` in state) = `styles` (gaya per elemen bawaan, key `digit`/`label`/`ticker`/`clock`, dipakai lewat `resolveElementStyle` di `src/lib/element-style.ts`) + `texts` (teks tambahan, dirender `LayoutOverlay`). Diedit di `/layar` (`useLayoutEditor` + `src/components/editor/`). Helpers dan batas ada di `src/lib/layout.ts`; validasi dicerminkan di `server/layout-style.js`. Field `offsets` lama diabaikan.
+- Per-page layout (`layoutTimer`, `layoutMatador` in state) = `styles` (gaya per elemen bawaan, key `digit`/`label`/`ticker`/`clock`, dipakai lewat `resolveElementStyle` di `src/lib/element-style.ts`) + `texts` (teks tambahan, dirender `LayoutOverlay`). Diedit di `/layar` (`useLayoutEditor` + `src/components/editor/`). Helpers dan batas ada di `src/lib/layout.ts`; aturan validasi satu-satunya ada di `server/layout-style.js` (CommonJS, dipakai relay dan diimpor `src/lib/layout.ts`). Field `offsets` lama diabaikan.
 - Appearance (background, font, colors) is part of the synced state. Fonts load through a Google Fonts `@import` in `globals.css`, and font classes are `.app-font-*`.
 
 ## Conventions

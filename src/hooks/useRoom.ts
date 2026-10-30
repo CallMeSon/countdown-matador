@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { normalizeRoomCode } from '@/lib/room-code';
+import { timerStore } from '@/lib/timer-store';
 
 const LAST_ROOM_KEY = 'matador-timer:last-room';
 
@@ -29,6 +30,11 @@ export function useRoom(): RoomInfo {
     if (fromUrl) setRoomState(fromUrl);
     setReady(true);
   }, []);
+
+  // Sesi room: begitu kode room ada, store bergabung ke room itu (semua halaman butuh ini).
+  useEffect(() => {
+    if (room) timerStore.setRoom(room);
+  }, [room]);
 
   const setRoom = useCallback((code: string) => {
     const normalized = normalizeRoomCode(code);

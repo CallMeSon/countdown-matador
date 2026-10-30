@@ -46,10 +46,6 @@ const clamp = (raw: string, min: number, max: number): string => {
 export default function ControlPage() {
   const { ready, room, lastUsedRoom, setRoom } = useRoom();
 
-  useEffect(() => {
-    if (room) timerStore.setRoom(room);
-  }, [room]);
-
   if (!ready) {
     return <main className="min-h-screen bg-page" />;
   }

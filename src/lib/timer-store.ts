@@ -3,6 +3,7 @@
 import { TimerState, DEFAULT_TIMER_STATE, CustomTextBlock, ElementStyle, PageLayout } from '@/types/timer';
 import { mergeIncomingState, sanitizeImageUrl } from '@/lib/appearance';
 import { generateBlockId, normalizePageLayout, sanitizeElementStyle, sanitizeTextStyle, LAYOUT_LIMITS } from '@/lib/layout';
+import { clampInt } from '../../server/layout-style';
 
 export type LayoutPage = 'timer' | 'matador';
 
@@ -263,8 +264,6 @@ class TimerStore {
   updateCustomText(page: LayoutPage, id: string, patch: Partial<Omit<CustomTextBlock, 'id'>>): void {
     if (!this.room) return;
     const k = this.layoutKey(page);
-    const clampInt = (v: number, min: number, max: number): number =>
-      Math.min(max, Math.max(min, Math.round(v)));
     const texts = this.state[k].texts.map((b) => {
       if (b.id !== id) return b;
       const next = { ...b };
@@ -293,8 +292,6 @@ class TimerStore {
     const k = this.layoutKey(page);
     const src = this.state[k].texts.find((b) => b.id === id);
     if (!src || this.state[k].texts.length >= LAYOUT_LIMITS.BLOCKS_MAX) return null;
-    const clampInt = (v: number, min: number, max: number): number =>
-      Math.min(max, Math.max(min, Math.round(v)));
     const newId = generateBlockId();
     const copy: CustomTextBlock = {
       ...src,

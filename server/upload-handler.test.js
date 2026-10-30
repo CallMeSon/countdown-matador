@@ -144,3 +144,38 @@ test('readPositiveNumber: angka valid lolos, sisanya fallback', () => {
   assert.equal(readPositiveNumber(undefined, 7), 7);
   assert.equal(readPositiveNumber(NaN, 7), 7);
 });
+
+test('413 lebih awal dari Content-Length tanpa membaca body', async () => {
+  const dir = tmpDir();
+  const req = makeReq('POST', png());
+  req.headers = { 'content-length': '999' };
+  const res = await run(createUploadHandler({ dir, maxBytes: 100 }), req);
+  assert.equal(res.state.status, 413);
+  assert.equal(fs.existsSync(path.join(dir, 'x.png')), false);
+});
+
+test('507 bila kuota folder upload penuh', async () => {
+  const dir = tmpDir();
+  fs.writeFileSync(path.join(dir, 'lama.png'), Buffer.alloc(100));
+  const res = await run(createUploadHandler({ dir, maxDirBytes: 105, makeId: () => 'baru' }), makeReq('POST', png()));
+  assert.equal(res.state.status, 507);
+  assert.equal(fs.existsSync(path.join(dir, 'baru.png')), false);
+});
+
+test('429 bila upload bersamaan melebihi batas', async () => {
+  const dir = tmpDir();
+  const handler = createUploadHandler({ dir, maxConcurrent: 1, makeId: () => 'a' });
+  // Upload pertama menggantung (stream belum berakhir) dan memegang satu slot.
+  const hanging = new Readable({ read() {} });
+  hanging.method = 'POST';
+  hanging.destroy = () => {};
+  handler(hanging, makeRes());
+  const res = await run(handler, makeReq('POST', png()));
+  assert.equal(res.state.status, 429);
+});
+
+test('upload berhasil sebelum kuota penuh', async () => {
+  const dir = tmpDir();
+  const res = await run(createUploadHandler({ dir, maxDirBytes: 1000, makeId: () => 'ok' }), makeReq('POST', png()));
+  assert.equal(res.state.status, 200);
+});

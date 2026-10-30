@@ -13,7 +13,7 @@ const { parse: parseUrl } = require('url');
 const WebSocket = require('ws');
 const http = require('http');
 const { createUploadHandler, pruneUploads, readPositiveNumber } = require('./upload-handler');
-const { sanitizeTextStyle, sanitizeElementStyle, ELEMENT_KEYS } = require('./layout-style');
+const { createDefaultState, normalizeState } = require('./layout-style');
 
 const PORT = Number(process.env.PORT || 8081);
 const STATE_FILE = process.env.STATE_FILE || path.join(__dirname, 'state.json');
@@ -22,26 +22,11 @@ const PRUNE_MS = 7 * 24 * 60 * 60 * 1000; // 7 hari
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '..', 'public', 'uploads');
 const UPLOAD_MAX_AGE_MS = readPositiveNumber(process.env.UPLOAD_MAX_AGE_DAYS, 30) * 24 * 60 * 60 * 1000;
 const MAX_UPLOAD_BYTES = readPositiveNumber(process.env.MAX_UPLOAD_BYTES, 8 * 1024 * 1024);
+const MAX_UPLOAD_DIR_BYTES = readPositiveNumber(process.env.MAX_UPLOAD_DIR_BYTES, 512 * 1024 * 1024);
 
-const DEFAULT_STATE = {
-  status: 'idle',
-  duration: 300,
-  startedAt: null,
-  pausedRemaining: null,
-  displayMode: 'timer',
-  stageMessage: null,
-  appearance: {
-    bgMode: 'color',
-    bgColor: '#000000',
-    bgImage: '',
-    fontFamily: 'default',
-    bold: false,
-    italic: false,
-    fontColor: '#ffffff',
-  },
-  layoutTimer: { styles: {}, texts: [] },
-  layoutMatador: { styles: {}, texts: [] },
-};
+const MAX_PAYLOAD_BYTES = 64 * 1024;
+const MAX_ROOMS = readPositiveNumber(process.env.MAX_ROOMS, 500);
+const ROOM_ID_PATTERN = /^[A-Za-z0-9_-]{1,32}$/;
 
 /** rooms: Map<roomId, { state: TimerState, clients: Set<WebSocket>, updatedAt: number }> */
 const rooms = new Map();
@@ -69,7 +54,7 @@ function loadRooms() {
       typeof entry.state.status === 'string' &&
       typeof entry.updatedAt === 'number'
     ) {
-      rooms.set(roomId, { state: entry.state, clients: new Set(), updatedAt: entry.updatedAt });
+      rooms.set(roomId, { state: normalizeState(entry.state), clients: new Set(), updatedAt: entry.updatedAt });
     }
     // entry gak sesuai shape (misal file lama format flat pre-room) -> skip diam-diam
   }
@@ -94,13 +79,13 @@ function persistRooms() {
 function getOrCreateRoom(roomId) {
   let room = rooms.get(roomId);
   if (!room) {
-    room = { state: { ...DEFAULT_STATE }, clients: new Set(), updatedAt: Date.now() };
+    room = { state: createDefaultState(), clients: new Set(), updatedAt: Date.now() };
     rooms.set(roomId, room);
   }
   return room;
 }
 
-const handleUpload = createUploadHandler({ dir: UPLOAD_DIR, maxBytes: MAX_UPLOAD_BYTES });
+const handleUpload = createUploadHandler({ dir: UPLOAD_DIR, maxBytes: MAX_UPLOAD_BYTES, maxDirBytes: MAX_UPLOAD_DIR_BYTES });
 
 const server = http.createServer((req, res) => {
   if (parseUrl(req.url, true).pathname === '/upload') {
@@ -111,7 +96,7 @@ const server = http.createServer((req, res) => {
   res.end(JSON.stringify({ error: 'not found' }));
 });
 
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ server, maxPayload: MAX_PAYLOAD_BYTES });
 
 server.listen(PORT, '127.0.0.1', () => {
   const address = server.address();
@@ -140,35 +125,20 @@ function send(socket, msg) {
   }
 }
 
-function normalizeLayout(raw) {
-  const out = { styles: {}, texts: [] };
-  if (!raw || typeof raw !== 'object') return out;
-  // `offsets` lama (posisi geser elemen bawaan) sengaja diabaikan: layout bawaan dikunci.
-  if (raw.styles && typeof raw.styles === 'object') {
-    for (const key of ELEMENT_KEYS) {
-      const clean = sanitizeElementStyle(raw.styles[key]);
-      if (Object.keys(clean).length > 0) out.styles[key] = clean;
-    }
-  }
-  if (Array.isArray(raw.texts)) {
-    for (const t of raw.texts) {
-      if (out.texts.length >= 5) break;
-      if (!t || typeof t !== 'object' || typeof t.id !== 'string' || !/^[a-z0-9]{8}$/.test(t.id)) continue;
-      const text = typeof t.text === 'string' ? t.text.trim().slice(0, 120) : '';
-      if (!text) continue;
-      const cx = (v, lo, hi, fb) => { const n = Number(v); return !Number.isFinite(n) ? fb : Math.min(hi, Math.max(lo, Math.round(n))); };
-      out.texts.push({ id: t.id, text, x: cx(t.x, 0, 1920, 960), y: cx(t.y, 0, 1080, 540), size: cx(t.size, 24, 200, 64), ...sanitizeTextStyle(t) });
-    }
-  }
-  return out;
-}
-
 wss.on('connection', (socket, req) => {
   const query = parseUrl(req.url, true).query;
   const roomId = typeof query.room === 'string' ? query.room.trim() : '';
 
   if (!roomId) {
     socket.close(1008, 'room required');
+    return;
+  }
+  if (!ROOM_ID_PATTERN.test(roomId)) {
+    socket.close(1008, 'invalid room');
+    return;
+  }
+  if (!rooms.has(roomId) && rooms.size >= MAX_ROOMS) {
+    socket.close(1013, 'too many rooms');
     return;
   }
 
@@ -195,18 +165,9 @@ wss.on('connection', (socket, req) => {
     if (!currentRoom) return;
 
     if (msg.type === 'STATE' && msg.state && typeof msg.state === 'object') {
-      // Pesan dari client lama bisa datang tanpa `appearance`; jangan biarkan itu
-      // menghapus styling room. Pakai appearance baru kalau ada, kalau tidak
-      // pertahankan punya room, dan selalu isi field yang hilang dari default.
-      const baseAppearance =
-        (currentRoom.state && currentRoom.state.appearance) || DEFAULT_STATE.appearance;
-      currentRoom.state = {
-        ...DEFAULT_STATE,
-        ...msg.state,
-        appearance: { ...DEFAULT_STATE.appearance, ...(msg.state.appearance || baseAppearance) },
-        layoutTimer: normalizeLayout(msg.state.layoutTimer),
-        layoutMatador: normalizeLayout(msg.state.layoutMatador),
-      };
+      // Saring semua field (tipe, rentang, panjang). Pesan dari client lama tanpa
+      // `appearance` mempertahankan appearance room; field lain yang hilang diisi default.
+      currentRoom.state = normalizeState(msg.state, currentRoom.state && currentRoom.state.appearance);
       currentRoom.updatedAt = Date.now();
       persistRooms();
       // Fan out ke client lain di room yang sama, jangan echo ke pengirim.
