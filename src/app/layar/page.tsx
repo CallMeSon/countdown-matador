@@ -27,10 +27,6 @@ const FALLBACK_SCALE = 0.4; // dipakai bila lebar kontainer belum terukur (mis. 
 export default function LayarPage() {
   const { ready, room, lastUsedRoom, setRoom } = useRoom();
 
-  useEffect(() => {
-    if (room) timerStore.setRoom(room);
-  }, [room]);
-
   if (!ready) {
     return <main className="min-h-screen bg-page" />;
   }

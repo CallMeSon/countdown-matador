@@ -7,6 +7,8 @@ const { detectImageType, extForType } = require('./image-types');
 
 const DEFAULT_MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 const DEFAULT_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+const DEFAULT_MAX_DIR_BYTES = 512 * 1024 * 1024;
+const MAX_CONCURRENT_UPLOADS = 4;
 
 // Endpoint ini tanpa autentikasi/kredensial, jadi origin boleh dibuka.
 const CORS_HEADERS = {
@@ -28,7 +30,10 @@ function sendJson(res, status, body) {
 function createUploadHandler(options) {
   const dir = options.dir;
   const maxBytes = options.maxBytes || DEFAULT_MAX_UPLOAD_BYTES;
+  const maxDirBytes = options.maxDirBytes || DEFAULT_MAX_DIR_BYTES;
+  const maxConcurrent = options.maxConcurrent || MAX_CONCURRENT_UPLOADS;
   const makeId = options.makeId || (() => crypto.randomUUID());
+  let active = 0;
 
   return function handleUpload(req, res) {
     if (req.method === 'OPTIONS') {
@@ -40,6 +45,27 @@ function createUploadHandler(options) {
       sendJson(res, 405, { error: 'method not allowed' });
       return;
     }
+
+    // Tolak lebih awal dari header sebelum ada byte yang dibaca/ditampung.
+    const declared = Number(req.headers && req.headers['content-length']);
+    if (Number.isFinite(declared) && declared > maxBytes) {
+      res.on('finish', () => req.destroy());
+      sendJson(res, 413, { error: 'file too large' });
+      return;
+    }
+    if (active >= maxConcurrent) {
+      res.on('finish', () => req.destroy());
+      sendJson(res, 429, { error: 'busy' });
+      return;
+    }
+    active += 1;
+    let released = false;
+    const release = () => {
+      if (released) return;
+      released = true;
+      active -= 1;
+    };
+    res.on('close', release);
 
     const chunks = [];
     let size = 0;
@@ -78,6 +104,16 @@ function createUploadHandler(options) {
           sendJson(res, 500, { error: 'storage unavailable' });
           return;
         }
+        dirSize(dir).then((used) => {
+          if (used + buf.length > maxDirBytes) {
+            sendJson(res, 507, { error: 'storage full' });
+            return;
+          }
+          writeFile();
+        });
+      });
+
+      function writeFile() {
         fs.writeFile(path.join(dir, name), buf, (writeErr) => {
           if (writeErr) {
             sendJson(res, 500, { error: 'write failed' });
@@ -85,9 +121,27 @@ function createUploadHandler(options) {
           }
           sendJson(res, 200, { url: `/uploads/${name}` });
         });
-      });
+      }
     });
   };
+}
+
+/** Total ukuran file biasa di `dir` (tidak rekursif). Folder tak terbaca dihitung 0. */
+async function dirSize(dir) {
+  let total = 0;
+  try {
+    for (const name of await fs.promises.readdir(dir)) {
+      try {
+        const stat = await fs.promises.stat(path.join(dir, name));
+        if (stat.isFile()) total += stat.size;
+      } catch {
+        // file hilang saat dihitung — lewati
+      }
+    }
+  } catch {
+    return 0;
+  }
+  return total;
 }
 
 /** Hapus file di `dir` yang mtime-nya lebih tua dari `maxAgeMs`. Kembalikan jumlah terhapus. */

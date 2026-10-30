@@ -17,10 +17,6 @@ export default function MatadorPage() {
     if (ready && !room && lastUsedRoom) setRoom(lastUsedRoom);
   }, [ready, room, lastUsedRoom, setRoom]);
 
-  useEffect(() => {
-    if (room) timerStore.setRoom(room);
-  }, [room]);
-
   if (!ready) {
     return <main className="h-screen w-screen bg-black" />;
   }
