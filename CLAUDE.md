@@ -28,6 +28,10 @@ Event countdown system with three pages sharing one timer state per **room** (co
 - Relay limits: WS messages max 64 KiB, room id `[A-Za-z0-9_-]{1,32}`, max rooms `MAX_ROOMS` (500), uploads capped by `MAX_UPLOAD_BYTES` (8 MiB each), `MAX_UPLOAD_DIR_BYTES` (512 MiB total), 4 concurrent. Every STATE message is filtered by `normalizeState` (`server/layout-style.js`).
 - Access control is only the room code (no accounts). Keep codes random (5 chars); avoid short custom codes. Per-IP rate limits belong in nginx: `limit_req` on `/ws` and `/upload`, `client_max_body_size 8m`. The relay needs Node >= 18.
 
+### TODO (belum dikerjakan)
+
+- Pasang rate limit nginx di server `debian-gio` (`timer.digioh.id`, config yang memakai `root /var/www/timer`): `limit_req` untuk `/ws` dan `/upload`, plus `client_max_body_size 8m`. Sampai ini dipasang, relay hanya terlindungi batas di kode (64 KiB per pesan, 500 room, kuota upload 512 MiB), bukan batas per IP.
+
 ### Build and deploy
 
 - Production build uses `output: 'export'` (static site in `out/`, `trailingSlash: true`), set only when `NODE_ENV=production` in `next.config.mjs`. In dev, `/upload` is proxied to the relay by a rewrite. In production, `/ws` and `/upload` must be routed to the relay by a reverse proxy (nginx). Static export ignores rewrites.
