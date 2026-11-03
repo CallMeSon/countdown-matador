@@ -5,6 +5,7 @@ import {
   appearanceClass,
   mergeIncomingState,
   normalizeAppearance,
+  resolvePageBackground,
   sanitizeImageUrl,
 } from '@/lib/appearance';
 import { DEFAULT_APPEARANCE, DEFAULT_TIMER_STATE } from '@/types/timer';
@@ -140,4 +141,31 @@ describe('mergeIncomingState layout', () => {
     expect(merged.layoutTimer.styles.digit).toEqual({ size: 150 });
     expect(merged.layoutTimer.texts).toHaveLength(5);
   });
+
+describe('resolvePageBackground', () => {
+  const appearance = {
+    ...DEFAULT_APPEARANCE,
+    bgMode: 'color' as const,
+    bgColor: '#101010',
+    bgImage: '/backgrounds/grid-dark.svg',
+  };
+
+  it('tanpa latar halaman: ikut appearance global', () => {
+    const global = { bgMode: 'color', bgColor: '#101010', bgImage: '/backgrounds/grid-dark.svg' };
+    expect(resolvePageBackground(undefined, appearance)).toEqual(global);
+    expect(resolvePageBackground({ styles: {}, texts: [] }, appearance)).toEqual(global);
+  });
+
+  it('field latar halaman menimpa global, field yang kosong tetap ikut global', () => {
+    const layout = { styles: {}, texts: [], background: { bgMode: 'image' as const, bgColor: '#ff0000' } };
+    expect(resolvePageBackground(layout, appearance)).toEqual({
+      bgMode: 'image', bgColor: '#ff0000', bgImage: '/backgrounds/grid-dark.svg',
+    });
+  });
+
+  it('bgImage kosong di halaman menimpa global (gambar dikosongkan untuk halaman itu)', () => {
+    const layout = { styles: {}, texts: [], background: { bgImage: '' } };
+    expect(resolvePageBackground(layout, appearance).bgImage).toBe('');
+  });
+});
 });

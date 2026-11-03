@@ -7,6 +7,7 @@ import { useRoom } from '@/hooks/useRoom';
 import { useLayoutEditor } from '@/hooks/useLayoutEditor';
 import { STAGE_HEIGHT, STAGE_WIDTH } from '@/hooks/useStageScale';
 import { timerStore } from '@/lib/timer-store';
+import { resolvePageBackground } from '@/lib/appearance';
 import type { LayoutPage } from '@/lib/timer-store';
 import { DEFAULT_APPEARANCE } from '@/types/timer';
 import { RoomGate } from '@/components/RoomGate';
@@ -65,7 +66,10 @@ function Editor({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSyncTick((t) => t + 1);
   }, [state.layoutTimer, state.layoutMatador]);
-  const appearance = state.appearance ?? DEFAULT_APPEARANCE;
+  const background = resolvePageBackground(
+    page === 'timer' ? state.layoutTimer : state.layoutMatador,
+    state.appearance ?? DEFAULT_APPEARANCE,
+  );
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(FALLBACK_SCALE);
   const [tab, setTab] = useState<'elemen' | 'latar'>('elemen');
@@ -187,7 +191,7 @@ function Editor({
                     transformOrigin: 'top left',
                   }}
                 >
-                  <StageBackground appearance={appearance} />
+                  <StageBackground background={background} />
                   {page === 'timer' ? <TimerStage state={state} editing /> : <MatadorStage state={state} editing />}
                   <EditorCanvas
                     page={page}
@@ -226,7 +230,7 @@ Klik elemen di layar atau di daftar untuk mengubah tampilannya. Posisi elemen ba
               </>
             ) : (
               <Card title="Latar" className="!p-6">
-                <BackgroundPanel />
+                <BackgroundPanel page={page} />
               </Card>
             )}
           </aside>

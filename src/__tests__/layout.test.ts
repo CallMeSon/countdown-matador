@@ -4,6 +4,7 @@ import {
   normalizePageLayout,
   sanitizeCustomText,
   sanitizeElementStyle,
+  sanitizePageBackground,
 } from '@/lib/layout';
 
 describe('sanitizeElementStyle', () => {
@@ -79,4 +80,29 @@ describe('miniToStage', () => {
     expect(miniToStage(320, 180, 640, 360)).toEqual({ x: 960, y: 540 });
     expect(miniToStage(0, 0, 640, 360)).toEqual({ x: 0, y: 0 });
   });
+
+describe('sanitizePageBackground', () => {
+  it('field valid lolos; bgImage kosong tetap ada (= gambar dikosongkan)', () => {
+    expect(sanitizePageBackground({ bgMode: 'image', bgColor: '#123456', bgImage: '' })).toEqual({
+      bgMode: 'image', bgColor: '#123456', bgImage: '',
+    });
+  });
+
+  it('membuang nilai tidak valid dan input bukan objek', () => {
+    expect(sanitizePageBackground({ bgMode: 'video', bgColor: 'merah', bgImage: 'javascript:alert(1)' })).toEqual({ bgImage: '' });
+    expect(sanitizePageBackground({})).toEqual({});
+    expect(sanitizePageBackground(null)).toEqual({});
+    expect(sanitizePageBackground('x')).toEqual({});
+  });
+});
+
+describe('normalizePageLayout dan background', () => {
+  it('background dipertahankan bila ada isinya, dan key-nya tidak muncul bila kosong', () => {
+    expect(normalizePageLayout({ background: { bgColor: '#123456', bogus: 1 } })).toEqual({
+      styles: {}, texts: [], background: { bgColor: '#123456' },
+    });
+    expect(normalizePageLayout({ background: { bgMode: 'video' } })).toEqual({ styles: {}, texts: [] });
+    expect('background' in normalizePageLayout(undefined)).toBe(false);
+  });
+});
 });

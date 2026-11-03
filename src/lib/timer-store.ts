@@ -1,8 +1,15 @@
 'use client';
 
-import { TimerState, DEFAULT_TIMER_STATE, CustomTextBlock, ElementStyle, PageLayout } from '@/types/timer';
+import { TimerState, DEFAULT_TIMER_STATE, CustomTextBlock, ElementStyle, PageBackground, PageLayout } from '@/types/timer';
 import { mergeIncomingState, sanitizeImageUrl } from '@/lib/appearance';
-import { generateBlockId, normalizePageLayout, sanitizeElementStyle, sanitizeTextStyle, LAYOUT_LIMITS } from '@/lib/layout';
+import {
+  generateBlockId,
+  normalizePageLayout,
+  sanitizeElementStyle,
+  sanitizePageBackground,
+  sanitizeTextStyle,
+  LAYOUT_LIMITS,
+} from '@/lib/layout';
 import { clampInt } from '../../server/layout-style';
 
 export type LayoutPage = 'timer' | 'matador';
@@ -249,6 +256,26 @@ class TimerStore {
     this.setState({ ...this.state, [k]: { ...this.state[k], styles } }, true);
   }
 
+  // Gabungkan `patch` ke latar halaman itu; kalau hasilnya kosong, key `background` dihapus (ikut global).
+  setPageBackground(page: LayoutPage, patch: PageBackground): void {
+    if (!this.room) return;
+    const k = this.layoutKey(page);
+    const current = this.state[k];
+    const merged = sanitizePageBackground({ ...current.background, ...patch });
+    const next: PageLayout = { ...current, background: merged };
+    if (Object.keys(merged).length === 0) delete next.background;
+    this.setState({ ...this.state, [k]: next }, true);
+  }
+
+  // Hapus latar halaman itu: halaman kembali mengikuti appearance global.
+  resetPageBackground(page: LayoutPage): void {
+    if (!this.room) return;
+    const k = this.layoutKey(page);
+    const next: PageLayout = { ...this.state[k] };
+    delete next.background;
+    this.setState({ ...this.state, [k]: next }, true);
+  }
+
   addCustomText(page: LayoutPage, text: string): string | null {
     if (!this.room) return null;
     const k = this.layoutKey(page);
@@ -303,11 +330,16 @@ class TimerStore {
     return newId;
   }
 
-  // Untuk undo/redo: ganti seluruh layout halaman (dinormalisasi dulu).
+  // Untuk undo/redo: ganti gaya dan teks halaman (dinormalisasi dulu). Latar TIDAK masuk riwayat
+  // undo, jadi latar yang sekarang dipertahankan; kalau tidak, undo gaya ikut membatalkan
+  // perubahan latar yang dibuat setelahnya.
   replaceLayout(page: LayoutPage, layout: PageLayout): void {
     if (!this.room) return;
     const k = this.layoutKey(page);
-    this.setState({ ...this.state, [k]: normalizePageLayout(layout) }, true);
+    const next = normalizePageLayout({ styles: layout.styles, texts: layout.texts });
+    const background = this.state[k].background;
+    if (background) next.background = background;
+    this.setState({ ...this.state, [k]: next }, true);
   }
 
   removeCustomText(page: LayoutPage, id: string): void {
@@ -317,10 +349,14 @@ class TimerStore {
     this.setState({ ...this.state, [k]: { ...this.state[k], texts } }, true);
   }
 
+  // Hanya gaya dan teks yang dikosongkan; latar halaman tetap (dihapus lewat resetPageBackground).
   resetLayout(page: LayoutPage): void {
     if (!this.room) return;
     const k = this.layoutKey(page);
-    this.setState({ ...this.state, [k]: { styles: {}, texts: [] } }, true);
+    const next: PageLayout = { styles: {}, texts: [] };
+    const background = this.state[k].background;
+    if (background) next.background = background;
+    this.setState({ ...this.state, [k]: next }, true);
   }
 
   computeRemaining(state: TimerState, now: number): number {

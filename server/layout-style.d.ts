@@ -1,4 +1,4 @@
-import type { CustomTextBlock, ElementStyle, FontKey, PageLayout, TimerState } from '../src/types/timer';
+import type { CustomTextBlock, ElementStyle, FontKey, PageBackground, PageLayout, TimerState } from '../src/types/timer';
 
 export const LAYOUT_LIMITS: {
   readonly X_MIN: 0; readonly X_MAX: 1920;
@@ -17,6 +17,7 @@ export function sanitizeTextStyle(
 ): Partial<Omit<CustomTextBlock, 'id' | 'text' | 'x' | 'y' | 'size'>>;
 export function sanitizeElementStyle(raw: unknown): ElementStyle;
 export function sanitizeCustomText(raw: unknown): CustomTextBlock | null;
+export function sanitizePageBackground(raw: unknown): PageBackground;
 export function normalizePageLayout(raw: unknown): PageLayout;
 export function createDefaultState(): TimerState;
 export function normalizeState(raw: unknown, fallbackAppearance?: TimerState['appearance']): TimerState;

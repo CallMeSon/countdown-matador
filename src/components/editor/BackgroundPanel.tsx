@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTimer } from '@/hooks/useTimer';
 import { timerStore } from '@/lib/timer-store';
-import { GALLERY_BACKGROUNDS, sanitizeImageUrl } from '@/lib/appearance';
+import type { LayoutPage } from '@/lib/timer-store';
+import { GALLERY_BACKGROUNDS, resolvePageBackground, sanitizeImageUrl } from '@/lib/appearance';
 import { uploadImage } from '@/lib/upload';
 import { DEFAULT_APPEARANCE } from '@/types/timer';
 import { Button } from '@/components/ui/Button';
@@ -11,17 +12,21 @@ import { Field } from '@/components/ui/Field';
 
 const sectionTitle = 'font-label text-[13px] font-medium uppercase tracking-[0.12em] text-sub';
 
-export function BackgroundPanel() {
+const PAGE_LABEL: Record<LayoutPage, string> = { timer: 'Layar Timer', matador: 'Layar Matador' };
+
+// Latar yang diedit adalah latar halaman `page` (bukan global); nilai yang kosong tampil dari global.
+export function BackgroundPanel({ page }: { page: LayoutPage }) {
   const { state } = useTimer();
   const appearance = state.appearance ?? DEFAULT_APPEARANCE;
-  const [imageUrl, setImageUrl] = useState(appearance.bgImage);
+  const bg = resolvePageBackground(page === 'timer' ? state.layoutTimer : state.layoutMatador, appearance);
+  const [imageUrl, setImageUrl] = useState(bg.bgImage);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
-    setImageUrl(appearance.bgImage);
-  }, [appearance.bgImage]);
+    setImageUrl(bg.bgImage);
+  }, [bg.bgImage]);
 
   const handleUpload = async (file: File | undefined) => {
     if (!file) return;
@@ -29,7 +34,7 @@ export function BackgroundPanel() {
     setUploadError(null);
     try {
       const url = await uploadImage(file);
-      timerStore.setAppearance({ bgMode: 'image', bgImage: url });
+      timerStore.setPageBackground(page, { bgMode: 'image', bgImage: url });
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Upload gagal.');
     } finally {
@@ -41,11 +46,11 @@ export function BackgroundPanel() {
     <button
       onClick={() => {
         setUploadError(null);
-        timerStore.setAppearance({ bgMode: mode });
+        timerStore.setPageBackground(page, { bgMode: mode });
       }}
-      aria-pressed={appearance.bgMode === mode}
+      aria-pressed={bg.bgMode === mode}
       className={`btn min-h-12 flex-1 rounded-control border px-4 py-3 font-medium tracking-wide ${
-        appearance.bgMode === mode
+        bg.bgMode === mode
           ? 'border-accent bg-accent/10 text-accent'
           : 'border-line bg-control text-fg hover:border-fg/30'
       }`}
@@ -56,6 +61,9 @@ export function BackgroundPanel() {
 
   return (
     <div className="space-y-6">
+      <p className="text-sm text-sub">
+        Latar untuk <span className="font-semibold text-fg">{PAGE_LABEL[page]}</span>
+      </p>
       <section>
         <h2 className={`mb-3 ${sectionTitle}`}>BACKGROUND</h2>
         <div className="mb-3 flex gap-3">
@@ -63,14 +71,14 @@ export function BackgroundPanel() {
           {modeButton('image', 'GAMBAR')}
         </div>
 
-        {appearance.bgMode === 'color' ? (
+        {bg.bgMode === 'color' ? (
           <label className="flex items-center justify-between rounded-control border border-line bg-input px-4 py-3 text-sm font-semibold text-fg">
             Warna background
             <input
               type="color"
               aria-label="Warna background"
-              value={appearance.bgColor}
-              onChange={(e) => timerStore.setAppearance({ bgColor: e.target.value })}
+              value={bg.bgColor}
+              onChange={(e) => timerStore.setPageBackground(page, { bgColor: e.target.value })}
               className="h-10 w-14 rounded"
             />
           </label>
@@ -107,9 +115,9 @@ export function BackgroundPanel() {
                 setUploadError(null);
                 setImageUrl(e.target.value);
               }}
-              onBlur={() => timerStore.setAppearance({ bgImage: sanitizeImageUrl(imageUrl) })}
+              onBlur={() => timerStore.setPageBackground(page, { bgImage: sanitizeImageUrl(imageUrl) })}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') timerStore.setAppearance({ bgImage: sanitizeImageUrl(imageUrl) });
+                if (e.key === 'Enter') timerStore.setPageBackground(page, { bgImage: sanitizeImageUrl(imageUrl) });
               }}
               placeholder="https://... atau /backgrounds/..."
               className="w-full text-sm"
@@ -119,10 +127,10 @@ export function BackgroundPanel() {
                 <button
                   key={path}
                   aria-label={`Pilih background ${path}`}
-                  aria-pressed={appearance.bgImage === path}
-                  onClick={() => timerStore.setAppearance({ bgImage: path })}
+                  aria-pressed={bg.bgImage === path}
+                  onClick={() => timerStore.setPageBackground(page, { bgImage: path })}
                   className={`h-14 overflow-hidden rounded-control border-2 ${
-                    appearance.bgImage === path ? 'border-accent' : 'border-line'
+                    bg.bgImage === path ? 'border-accent' : 'border-line'
                   }`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -132,7 +140,7 @@ export function BackgroundPanel() {
             </div>
             <Button
               variant="ghost"
-              onClick={() => timerStore.setAppearance({ bgImage: '' })}
+              onClick={() => timerStore.setPageBackground(page, { bgImage: '' })}
               className="w-full text-sm tracking-wide"
             >
               KOSONGKAN GAMBAR
@@ -143,13 +151,7 @@ export function BackgroundPanel() {
 
       <Button
         variant="ghost"
-        onClick={() =>
-          timerStore.setAppearance({
-            bgMode: DEFAULT_APPEARANCE.bgMode,
-            bgColor: DEFAULT_APPEARANCE.bgColor,
-            bgImage: DEFAULT_APPEARANCE.bgImage,
-          })
-        }
+        onClick={() => timerStore.resetPageBackground(page)}
         className="w-full tracking-wide"
       >
         RESET LATAR

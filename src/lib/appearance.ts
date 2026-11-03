@@ -1,8 +1,10 @@
 import {
   AppearanceConfig,
+  BackgroundConfig,
   DEFAULT_APPEARANCE,
   DEFAULT_TIMER_STATE,
   FontKey,
+  PageLayout,
   TimerState,
 } from '@/types/timer';
 import { normalizePageLayout } from './layout';
@@ -52,6 +54,19 @@ export function sanitizeImageUrl(raw: string): string {
     return '';
   }
   return '';
+}
+
+/** Latar efektif satu halaman: isian per halaman dulu, field yang kosong ikut appearance global. */
+export function resolvePageBackground(
+  layout: PageLayout | undefined,
+  appearance: AppearanceConfig,
+): BackgroundConfig {
+  const b = layout?.background ?? {};
+  return {
+    bgMode: b.bgMode ?? appearance.bgMode,
+    bgColor: b.bgColor ?? appearance.bgColor,
+    bgImage: b.bgImage ?? appearance.bgImage,
+  };
 }
 
 export function appearanceClass(a: AppearanceConfig): string {

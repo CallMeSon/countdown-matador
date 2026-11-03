@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { sanitizeTextStyle, normalizePageLayout, normalizeState } = require('./layout-style');
+const { sanitizeTextStyle, sanitizePageBackground, normalizePageLayout, normalizeState } = require('./layout-style');
 
 test('semua field gaya valid keluar utuh', () => {
   const style = { font: 'anton', bold: true, italic: false, align: 'right', color: '#aabbcc', spacing: 12, hidden: true };
@@ -52,4 +52,25 @@ test('normalizeState: allowlist field, default untuk nilai buruk, appearance lam
   assert.deepEqual(out.appearance, keep);
   assert.equal(normalizeState({ duration: 1e12 }).duration, 8640000);
   assert.equal(normalizeState({ stageMessage: { text: '   ' } }).stageMessage, null);
+
+test('sanitizePageBackground: field valid lolos, bgImage kosong tetap, sampah dibuang', () => {
+  assert.deepEqual(sanitizePageBackground({ bgMode: 'image', bgColor: '#123456', bgImage: '' }), {
+    bgMode: 'image', bgColor: '#123456', bgImage: '',
+  });
+  assert.deepEqual(sanitizePageBackground({ bgMode: 'x', bgColor: 'merah', bgImage: 'javascript:alert(1)' }), { bgImage: '' });
+  assert.deepEqual(sanitizePageBackground(null), {});
+});
+
+test('normalizePageLayout: background ikut tersimpan, objek kosong tidak meninggalkan key', () => {
+  assert.deepEqual(normalizePageLayout({ background: { bgColor: '#123456' } }).background, { bgColor: '#123456' });
+  assert.equal('background' in normalizePageLayout({ background: { bgMode: 'x' } }), false);
+});
+
+test('normalizeState: background per halaman lolos, halaman lain tidak tersentuh', () => {
+  const out = normalizeState({
+    layoutMatador: { styles: {}, texts: [], background: { bgImage: '/backgrounds/grid-dark.svg' } },
+  });
+  assert.deepEqual(out.layoutMatador.background, { bgImage: '/backgrounds/grid-dark.svg' });
+  assert.equal('background' in out.layoutTimer, false);
+});
 });

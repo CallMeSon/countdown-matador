@@ -73,9 +73,20 @@ export interface CustomTextBlock {
   hidden?: boolean;
 }
 
+// Latar per halaman. Sparse seperti ElementStyle: field yang tidak ada = ikut appearance global.
+export interface PageBackground {
+  bgMode?: BackgroundMode;
+  bgColor?: string;   // '#rrggbb'
+  bgImage?: string;   // sama seperti appearance.bgImage; '' = gambar dikosongkan untuk halaman ini
+}
+
+// Latar efektif satu halaman setelah digabung dengan appearance global.
+export type BackgroundConfig = Pick<AppearanceConfig, 'bgMode' | 'bgColor' | 'bgImage'>;
+
 export interface PageLayout {
   styles: Record<string, ElementStyle>;
   texts: CustomTextBlock[];
+  background?: PageBackground;
 }
 
 export const DEFAULT_PAGE_LAYOUT: PageLayout = { styles: {}, texts: [] };

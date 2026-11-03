@@ -75,6 +75,17 @@ function sanitizeCustomText(raw) {
   };
 }
 
+// Latar per halaman: field yang tidak valid dibuang. bgImage '' tetap valid (= gambar dikosongkan),
+// jadi string kosong jangan dianggap "tidak ada".
+function sanitizePageBackground(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object') return out;
+  if (BG_MODES.includes(raw.bgMode)) out.bgMode = raw.bgMode;
+  if (typeof raw.bgColor === 'string' && HEX_COLOR.test(raw.bgColor)) out.bgColor = raw.bgColor;
+  if (typeof raw.bgImage === 'string') out.bgImage = sanitizeImageUrl(raw.bgImage);
+  return out;
+}
+
 // `offsets` lama (posisi geser elemen bawaan) sengaja diabaikan: layout bawaan dikunci.
 function normalizePageLayout(raw) {
   const out = { styles: {}, texts: [] };
@@ -92,6 +103,8 @@ function normalizePageLayout(raw) {
       if (clean) out.texts.push(clean);
     }
   }
+  const background = sanitizePageBackground(raw.background);
+  if (Object.keys(background).length > 0) out.background = background;
   return out;
 }
 
@@ -195,6 +208,7 @@ module.exports = {
   sanitizeTextStyle,
   sanitizeElementStyle,
   sanitizeCustomText,
+  sanitizePageBackground,
   normalizePageLayout,
   createDefaultState,
   normalizeState,

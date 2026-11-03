@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { STAGE_HEIGHT, STAGE_WIDTH } from '@/hooks/useStageScale';
 import { DEFAULT_APPEARANCE, type TimerState } from '@/types/timer';
 import { StageBackground } from '@/components/StageBackground';
+import { resolvePageBackground } from '@/lib/appearance';
 import { TimerStage } from '@/components/stage/TimerStage';
 import { MatadorStage } from '@/components/stage/MatadorStage';
 
@@ -25,7 +26,10 @@ export function StagePreview({
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(FALLBACK_SCALE);
-  const appearance = state.appearance ?? DEFAULT_APPEARANCE;
+  const background = resolvePageBackground(
+    page === 'timer' ? state.layoutTimer : state.layoutMatador,
+    state.appearance ?? DEFAULT_APPEARANCE,
+  );
 
   useLayoutEffect(() => {
     const el = frameRef.current;
@@ -56,7 +60,7 @@ export function StagePreview({
           className="pointer-events-none absolute left-0 top-0 select-none"
           style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT, transform: `scale(${scale})`, transformOrigin: 'top left' }}
         >
-          <StageBackground appearance={appearance} />
+          <StageBackground background={background} />
           {page === 'timer' ? <TimerStage state={state} /> : <MatadorStage state={state} />}
         </div>
         {children}

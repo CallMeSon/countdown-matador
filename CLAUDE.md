@@ -40,7 +40,7 @@ Event countdown system with three pages sharing one timer state per **room** (co
 ### Display layout
 
 - Displays render a fixed 1920×1080 stage scaled to the viewport (`useStageScale`, `.timer-container` container queries in `globals.css`). Sizing uses `cqw`/`cqh`, not viewport units.
-- Per-page layout (`layoutTimer`, `layoutMatador` in state) = `styles` (gaya per elemen bawaan, key `digit`/`label`/`ticker`/`clock`, dipakai lewat `resolveElementStyle` di `src/lib/element-style.ts`) + `texts` (teks tambahan, dirender `LayoutOverlay`). Diedit di `/layar` (`useLayoutEditor` + `src/components/editor/`). Helpers dan batas ada di `src/lib/layout.ts`; aturan validasi satu-satunya ada di `server/layout-style.js` (CommonJS, dipakai relay dan diimpor `src/lib/layout.ts`). Field `offsets` lama diabaikan.
+- Per-page layout (`layoutTimer`, `layoutMatador` in state) = `styles` (gaya per elemen bawaan, key `digit`/`label`/`ticker`/`clock`, dipakai lewat `resolveElementStyle` di `src/lib/element-style.ts`) + `texts` (teks tambahan, dirender `LayoutOverlay`) + `background` (latar per halaman, field kosong = ikut appearance global, dibaca lewat `resolvePageBackground` di `src/lib/appearance.ts`). Diedit di `/layar` (`useLayoutEditor` + `src/components/editor/`). Helpers dan batas ada di `src/lib/layout.ts`; aturan validasi satu-satunya ada di `server/layout-style.js` (CommonJS, dipakai relay dan diimpor `src/lib/layout.ts`). Field `offsets` lama diabaikan.
 - Appearance (background, font, colors) is part of the synced state. Fonts load through a Google Fonts `@import` in `globals.css`, and font classes are `.app-font-*`.
 
 ## Conventions

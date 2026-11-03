@@ -5,6 +5,7 @@ import { useTimer } from '@/hooks/useTimer';
 import { useRoom } from '@/hooks/useRoom';
 import { STAGE_HEIGHT, STAGE_WIDTH, useStageScale } from '@/hooks/useStageScale';
 import { timerStore } from '@/lib/timer-store';
+import { resolvePageBackground } from '@/lib/appearance';
 import { StageBackground } from '@/components/StageBackground';
 import { TimerStage } from '@/components/stage/TimerStage';
 import { DEFAULT_APPEARANCE } from '@/types/timer';
@@ -62,11 +63,11 @@ function RoomEntryGate({ onSubmit }: { onSubmit: (code: string) => void }) {
 function TimerDisplay() {
   const { state } = useTimer();
   const scale = useStageScale();
-  const appearance = state.appearance ?? DEFAULT_APPEARANCE;
+  const background = resolvePageBackground(state.layoutTimer, state.appearance ?? DEFAULT_APPEARANCE);
 
   return (
     <main className="fixed inset-0 flex items-center justify-center overflow-hidden bg-black">
-      <StageBackground appearance={appearance} />
+      <StageBackground background={background} />
       <div
         className="relative z-10"
         style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT, transform: `scale(${scale})` }}

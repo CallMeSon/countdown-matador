@@ -367,4 +367,64 @@ describe('timerStore', () => {
       expect(store.timerStore.addCustomText('timer', 'X')).toBeNull();
     });
   });
+
+  describe('latar per halaman', () => {
+    it('setPageBackground hanya mengubah halaman itu, global tidak tersentuh', () => {
+      store.timerStore.setPageBackground('timer', { bgMode: 'image', bgImage: '/backgrounds/grid-dark.svg' });
+      store.timerStore.setPageBackground('timer', { bgColor: '#123456' });
+      expect(store.timerStore.getState().layoutTimer.background).toEqual({
+        bgMode: 'image', bgColor: '#123456', bgImage: '/backgrounds/grid-dark.svg',
+      });
+      expect(store.timerStore.getState().layoutMatador.background).toBeUndefined();
+      expect(store.timerStore.getState().appearance).toEqual(DEFAULT_APPEARANCE);
+    });
+
+    it('setPageBackground menyanitasi nilai tidak valid; bgImage kosong tetap disimpan', () => {
+      store.timerStore.setPageBackground('matador', { bgMode: 'video' as never, bgColor: 'merah', bgImage: 'javascript:alert(1)' });
+      expect(store.timerStore.getState().layoutMatador.background).toEqual({ bgImage: '' });
+    });
+
+    it('setPageBackground dengan patch yang semuanya tidak valid tidak menyisakan key background', () => {
+      store.timerStore.setPageBackground('timer', { bgMode: 'video' as never });
+      expect('background' in store.timerStore.getState().layoutTimer).toBe(false);
+    });
+
+    it('resetPageBackground menghapus latar halaman itu saja', () => {
+      store.timerStore.setPageBackground('timer', { bgColor: '#123456' });
+      store.timerStore.setPageBackground('matador', { bgColor: '#654321' });
+      store.timerStore.resetPageBackground('timer');
+      expect('background' in store.timerStore.getState().layoutTimer).toBe(false);
+      expect(store.timerStore.getState().layoutMatador.background).toEqual({ bgColor: '#654321' });
+    });
+
+    it('gaya elemen, teks, dan resetLayout tidak menghapus latar halaman', () => {
+      store.timerStore.setPageBackground('timer', { bgColor: '#123456' });
+      store.timerStore.setElementStyle('timer', 'digit', { size: 120 });
+      store.timerStore.addCustomText('timer', 'HAI');
+      expect(store.timerStore.getState().layoutTimer.background).toEqual({ bgColor: '#123456' });
+      store.timerStore.resetLayout('timer');
+      expect(store.timerStore.getState().layoutTimer).toEqual({
+        styles: {}, texts: [], background: { bgColor: '#123456' },
+      });
+    });
+
+    it('replaceLayout (undo/redo) mempertahankan latar yang sekarang', () => {
+      // Snapshot sebelum edit gaya (seperti riwayat undo), lalu latar diubah setelahnya.
+      const before = JSON.parse(JSON.stringify(store.timerStore.getState().layoutTimer));
+      store.timerStore.setElementStyle('timer', 'digit', { size: 120 });
+      store.timerStore.setPageBackground('timer', { bgColor: '#123456' });
+      store.timerStore.replaceLayout('timer', before);
+      const l = store.timerStore.getState().layoutTimer;
+      expect(l.styles).toEqual({});
+      expect(l.background).toEqual({ bgColor: '#123456' });
+    });
+
+    it('replaceLayout tidak memunculkan latar lama dari snapshot bila latar sekarang kosong', () => {
+      store.timerStore.setPageBackground('timer', { bgColor: '#111111' });
+      const snap = JSON.parse(JSON.stringify(store.timerStore.getState().layoutTimer));
+      store.timerStore.resetPageBackground('timer');
+      store.timerStore.replaceLayout('timer', snap);
+      expect('background' in store.timerStore.getState().layoutTimer).toBe(false);
+    });
+  });
 });

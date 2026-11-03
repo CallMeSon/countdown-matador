@@ -8,6 +8,7 @@ export {
   sanitizeTextStyle,
   sanitizeElementStyle,
   sanitizeCustomText,
+  sanitizePageBackground,
   normalizePageLayout,
 } from '../../server/layout-style';
 

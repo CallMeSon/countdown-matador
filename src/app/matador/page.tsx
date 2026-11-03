@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTimer } from '@/hooks/useTimer';
 import { useRoom } from '@/hooks/useRoom';
 import { timerStore } from '@/lib/timer-store';
+import { resolvePageBackground } from '@/lib/appearance';
 import { STAGE_HEIGHT, STAGE_WIDTH, useStageScale } from '@/hooks/useStageScale';
 import { DEFAULT_APPEARANCE } from '@/types/timer';
 import { StageBackground } from '@/components/StageBackground';
@@ -62,11 +63,11 @@ function RoomEntryGate({ onSubmit }: { onSubmit: (code: string) => void }) {
 function MatadorDisplay() {
   const { state } = useTimer();
   const scale = useStageScale();
-  const appearance = state.appearance ?? DEFAULT_APPEARANCE;
+  const background = resolvePageBackground(state.layoutMatador, state.appearance ?? DEFAULT_APPEARANCE);
 
   return (
     <main className="fixed inset-0 flex items-center justify-center overflow-hidden bg-black">
-      <StageBackground appearance={appearance} />
+      <StageBackground background={background} />
       <div
         className="relative z-10"
         style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT, transform: `scale(${scale})` }}
